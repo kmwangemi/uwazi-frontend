@@ -12,6 +12,7 @@ export function useAuth() {
   const {
     user,
     isAuthenticated,
+    isLoading,
     setUser,
     setToken,
     setLoading,
@@ -19,7 +20,6 @@ export function useAuth() {
     logout,
   } = useAuthStore();
   const [isInitialized, setIsInitialized] = useState(false);
-
   // Initialize auth from stored values
   useEffect(() => {
     const storedUser = authService.getStoredUser();
@@ -33,7 +33,6 @@ export function useAuth() {
     }
     setIsInitialized(true);
   }, []);
-
   const login = async (credentials: LoginSchema) => {
     try {
       setLoading(true);
@@ -54,7 +53,6 @@ export function useAuth() {
       setLoading(false);
     }
   };
-
   const register = async (userData: RegisterSchema) => {
     try {
       setLoading(true);
@@ -77,7 +75,6 @@ export function useAuth() {
       setLoading(false);
     }
   };
-
   const handleLogout = async () => {
     try {
       setLoading(true);
@@ -91,7 +88,6 @@ export function useAuth() {
       setLoading(false);
     }
   };
-
   const updateUserProfile = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
@@ -99,11 +95,11 @@ export function useAuth() {
       authService.saveUser(updatedUser);
     }
   };
-
   return {
     user,
     isAuthenticated,
     isInitialized,
+    isLoading,
     login,
     register,
     logout: handleLogout,
