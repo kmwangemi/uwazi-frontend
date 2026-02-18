@@ -1,29 +1,23 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/stores/authStore'
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { useAuthStore } from '@/stores/authStore';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function RootPage() {
-  const router = useRouter()
-  const { isAuthenticated, hydrate } = useAuthStore()
-
-  useEffect(() => {
-    hydrate()
-  }, [hydrate])
-
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard')
+      router.push('/dashboard');
     } else {
-      router.push('/login')
+      router.push('/login');
     }
-  }, [isAuthenticated, router])
-
+  }, [isAuthenticated, router]);
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-50">
-      <LoadingSpinner text="Redirecting..." />
+    <div className='flex h-screen items-center justify-center bg-gray-50'>
+      <LoadingSpinner text='Redirecting...' />
     </div>
-  )
+  );
 }

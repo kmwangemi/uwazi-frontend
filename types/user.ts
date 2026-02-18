@@ -10,7 +10,7 @@ export interface User {
 export type UserRole = 'INVESTIGATOR' | 'AUDITOR' | 'ADMIN' | 'CITIZEN'
 
 export interface LoginRequest {
-  email: string
+  username: string
   password: string
 }
 

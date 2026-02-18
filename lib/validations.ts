@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  username: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-})
+});
 
 export const tenderFilterSchema = z.object({
   search: z.string().optional(),
@@ -52,7 +52,7 @@ export const reportFilterSchema = z.object({
   category: z.string().optional(),
 })
 
-export type LoginFormData = z.infer<typeof loginSchema>
+export type LoginFormValues = z.infer<typeof loginSchema>;
 export type TenderFilterData = z.infer<typeof tenderFilterSchema>
 export type InvestigationFormData = z.infer<typeof investigationFormSchema>
 export type WhistleblowerFormData = z.infer<typeof whistleblowerFormSchema>

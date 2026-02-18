@@ -1,39 +1,32 @@
-'use client'
+'use client';
 
-import { ReactNode, useEffect, useState } from 'react'
-import { DashboardLayout } from '@/components/layout/DashboardLayout'
-import { useAuthStore } from '@/stores/authStore'
-import { useRouter } from 'next/navigation'
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { useAuthStore } from '@/stores/authStore';
+import { useRouter } from 'next/navigation';
+import { ReactNode, useEffect, useState } from 'react';
 
 export default function DashboardLayoutPage({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) {
-  const router = useRouter()
-  const { isAuthenticated, hydrate } = useAuthStore()
-  const [isReady, setIsReady] = useState(false)
-
-  useEffect(() => {
-    hydrate()
-  }, [hydrate])
-
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+  const [isReady, setIsReady] = useState(false);
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/login')
+      router.push('/login');
     } else {
-      setIsReady(true)
+      setIsReady(true);
     }
-  }, [isAuthenticated, router])
-
+  }, [isAuthenticated, router]);
   if (!isReady) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <LoadingSpinner text="Loading..." />
+      <div className='flex h-screen items-center justify-center bg-gray-50'>
+        <LoadingSpinner text='Loading...' />
       </div>
-    )
+    );
   }
-
-  return <DashboardLayout>{children}</DashboardLayout>
+  return <DashboardLayout>{children}</DashboardLayout>;
 }
