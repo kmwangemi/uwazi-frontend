@@ -1,10 +1,10 @@
-import { ReactNode } from 'react'
-import { PublicLayout } from '@/components/layout/PublicLayout'
+import { PublicLayout } from '@/components/layout/PublicLayout';
+import { ReactNode } from 'react';
 
 export default function PublicLayoutPage({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) {
-  return <PublicLayout>{children}</PublicLayout>
+  return <PublicLayout>{children}</PublicLayout>;
 }

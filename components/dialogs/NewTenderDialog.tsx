@@ -91,7 +91,7 @@ const tenderSchema = z
     entityName: z.string().min(2, 'Entity name is required'),
     entityType: z.string().min(1, 'Entity type is required'),
     title: z.string().min(5, 'Title must be at least 5 characters'),
-    referenceNumber: z
+    tender_number: z
       .string()
       .min(3, 'Reference number is required')
       .regex(/^[A-Z0-9\/\-\.]+$/i, 'Use format: ENTITY/TYPE/000/YYYY-YY'),
@@ -99,7 +99,7 @@ const tenderSchema = z
     description: z.string().optional(),
     procurementMethod: z.string().min(1, 'Procurement method is required'),
     sourceOfFunds: z.string().min(1, 'Source of funds is required'),
-    budgetedAmount: z
+    amount: z
       .string()
       .min(1, 'Budget amount is required')
       .refine(
@@ -350,12 +350,12 @@ export function NewTenderDialog({
       entityName: '',
       entityType: '',
       title: '',
-      referenceNumber: '',
+      tender_number: '',
       category: '',
       description: '',
       procurementMethod: '',
       sourceOfFunds: '',
-      budgetedAmount: '',
+      amount: '',
       county: '',
       deadline: '',
       openingDate: '',
@@ -460,17 +460,17 @@ export function NewTenderDialog({
             </div>
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
-                <Label htmlFor='referenceNumber'>Reference Number *</Label>
+                <Label htmlFor='tender_number'>Reference Number *</Label>
                 <Input
-                  id='referenceNumber'
+                  id='tender_number'
                   placeholder='e.g. MOH/OT/001/2025-26'
-                  {...register('referenceNumber')}
+                  {...register('tender_number')}
                   className={cn(
-                    errors.referenceNumber &&
+                    errors.tender_number &&
                       'border-destructive focus-visible:ring-destructive',
                   )}
                 />
-                <FieldError message={errors.referenceNumber?.message} />
+                <FieldError message={errors.tender_number?.message} />
               </div>
               <div className='space-y-2'>
                 <Label htmlFor='category'>Category *</Label>
@@ -570,18 +570,18 @@ export function NewTenderDialog({
             </div>
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
-                <Label htmlFor='budgetedAmount'>Budget Amount (KSh) *</Label>
+                <Label htmlFor='amount'>Budget Amount (KSh) *</Label>
                 <Input
-                  id='budgetedAmount'
+                  id='amount'
                   type='number'
                   placeholder='0.00'
-                  {...register('budgetedAmount')}
+                  {...register('amount')}
                   className={cn(
-                    errors.budgetedAmount &&
+                    errors.amount &&
                       'border-destructive focus-visible:ring-destructive',
                   )}
                 />
-                <FieldError message={errors.budgetedAmount?.message} />
+                <FieldError message={errors.amount?.message} />
               </div>
               <div className='space-y-2'>
                 <Label htmlFor='county'>County *</Label>

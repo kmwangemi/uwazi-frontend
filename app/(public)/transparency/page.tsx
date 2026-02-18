@@ -2,19 +2,17 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/formatters';
 import { mockDashboardStats } from '@/lib/mockData';
-import { AlertCircle, CheckCircle, Search, TrendingUp } from 'lucide-react';
+import { AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TransparencyPage() {
   const stats = mockDashboardStats;
-
   return (
     <div className='min-h-screen'>
       {/* Hero Section */}
-      <section className='bg-gradient-to-br from-primary to-blue-700 text-white px-4 py-16 sm:py-20'>
+      <section className='bg-linear-to-br from-primary to-blue-700 text-white px-4 py-16 sm:py-20'>
         <div className='mx-auto max-w-4xl text-center'>
           <h1 className='text-4xl font-bold sm:text-5xl'>
             Kenya's Procurement Transparency Portal
@@ -28,28 +26,18 @@ export default function TransparencyPage() {
                 Report Corruption
               </Button>
             </Link>
-            <Button
-              size='lg'
-              variant='outline'
-              className='border-white text-white hover:bg-white/10'
-            >
-              Learn More
-            </Button>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className='mx-auto mt-12 max-w-2xl'>
-          <div className='relative'>
-            <Search className='absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-blue-300' />
-            <Input
-              placeholder='Search by tender number, entity, or supplier...'
-              className='border-0 bg-white pl-12 py-3 text-gray-900 placeholder:text-gray-500'
-            />
+            <Link href='/tenders/available'>
+              <Button
+                size='lg'
+                variant='outline'
+                className='border-white text-white bg-white/10 hover:bg-white/20'
+              >
+                Explore Available Tenders
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
-
       {/* Stats Section */}
       <section className='px-4 py-16'>
         <div className='mx-auto max-w-6xl'>
@@ -81,7 +69,6 @@ export default function TransparencyPage() {
           </div>
         </div>
       </section>
-
       {/* Key Insights */}
       <section className='bg-gray-50 px-4 py-16'>
         <div className='mx-auto max-w-6xl'>
@@ -128,7 +115,6 @@ export default function TransparencyPage() {
           </div>
         </div>
       </section>
-
       {/* Call to Action */}
       <section className='px-4 py-16'>
         <div className='mx-auto max-w-2xl text-center rounded-xl bg-primary/10 p-8'>

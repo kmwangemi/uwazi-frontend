@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { formatCurrency, getStatusBadgeColor } from '@/lib/formatters';
-import type { Tender } from '@/types';
+import type { Tender } from '@/types/tender';
 import { AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 

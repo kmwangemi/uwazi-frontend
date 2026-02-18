@@ -1,51 +1,69 @@
-'use client'
+'use client';
 
-import { mockTenders } from '@/lib/mockData'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Download, TrendingUp } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { formatCurrency, formatDate } from '@/lib/formatters'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatCurrency } from '@/lib/formatters';
+import { mockTenders } from '@/lib/mockData';
+import { ArrowLeft, Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
-export default function EntityDetailPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
-  const entityTenders = mockTenders.filter((t) => t.procuringEntity === params.id)
+export default function EntityDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = React.use(params);
+  const router = useRouter();
+  const entityTenders = mockTenders.filter(t => t.procuring_entity === id);
 
   if (entityTenders.length === 0) {
     return (
-      <div className="space-y-6">
-        <Button variant="outline" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className='space-y-6'>
+        <Button variant='outline' onClick={() => router.back()}>
+          <ArrowLeft className='h-4 w-4 mr-2' />
           Back
         </Button>
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900">Entity not found</h2>
+        <div className='text-center py-12'>
+          <h2 className='text-2xl font-bold text-gray-900'>Entity not found</h2>
         </div>
       </div>
-    )
+    );
   }
 
-  const entity = entityTenders[0]
-  const totalSpent = entityTenders.reduce((sum, t) => sum + t.budgetedAmount, 0)
-  const avgRisk = entityTenders.reduce((sum, t) => sum + t.corruptionRisk, 0) / entityTenders.length
-  const highRiskTenders = entityTenders.filter((t) => t.corruptionRisk >= 70).length
+  const entity = entityTenders[0];
+  const totalSpent = entityTenders.reduce((sum, t) => sum + t.amount, 0);
+  const avgRisk =
+    entityTenders.reduce((sum, t) => sum + t.risk_score, 0) /
+    entityTenders.length;
+  const highRiskTenders = entityTenders.filter(t => t.risk_score >= 70).length;
 
   // Group spending by category
   const spendingByCategory = entityTenders.reduce(
     (acc, t) => {
-      const existing = acc.find((item) => item.category === t.category)
+      const existing = acc.find(item => item.category === t.category);
       if (existing) {
-        existing.amount += t.budgetedAmount
+        existing.amount += t.amount;
       } else {
-        acc.push({ category: t.category, amount: t.budgetedAmount })
+        acc.push({ category: t.category, amount: t.amount });
       }
-      return acc
+      return acc;
     },
-    [] as Array<{ category: string; amount: number }>
-  )
+    [] as Array<{ category: string; amount: number }>,
+  );
 
   // Monthly spending trend (simulated)
   const monthlyTrend = [
@@ -55,126 +73,175 @@ export default function EntityDetailPage({ params }: { params: { id: string } })
     { month: 'Apr', amount: totalSpent * 0.13 },
     { month: 'May', amount: totalSpent * 0.18 },
     { month: 'Jun', amount: totalSpent * 0.32 },
-  ]
+  ];
 
   return (
-    <div className="space-y-6">
-      <Button variant="outline" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
+    <div className='space-y-6'>
+      <Button variant='outline' size='sm' onClick={() => router.back()}>
+        <ArrowLeft className='h-4 w-4 mr-2' />
         Back
       </Button>
 
-      <div className="space-y-4">
-        <div className="flex items-start justify-between gap-4">
+      <div className='space-y-4'>
+        <div className='flex items-start justify-between gap-4'>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{entity.procuringEntity}</h1>
-            <p className="text-gray-600 mt-1">{entity.county} County</p>
+            <h1 className='text-3xl font-bold text-gray-900'>
+              {entity.procuring_entity}
+            </h1>
+            <p className='text-gray-600 mt-1'>{entity.county} County</p>
           </div>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant='outline' size='sm'>
+            <Download className='h-4 w-4 mr-2' />
             Download Report
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Total Tenders</p>
-          <p className="text-3xl font-bold mt-2 text-gray-900">{entityTenders.length}</p>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+        <Card className='p-4'>
+          <p className='text-sm text-gray-600'>Total Tenders</p>
+          <p className='text-3xl font-bold mt-2 text-gray-900'>
+            {entityTenders.length}
+          </p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Total Spending</p>
-          <p className="text-2xl font-bold mt-2 text-gray-900">{formatCurrency(totalSpent)}</p>
+        <Card className='p-4'>
+          <p className='text-sm text-gray-600'>Total Spending</p>
+          <p className='text-2xl font-bold mt-2 text-gray-900'>
+            {formatCurrency(totalSpent)}
+          </p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Average Risk Score</p>
-          <p className="text-3xl font-bold mt-2 text-gray-900">{avgRisk.toFixed(0)}</p>
+        <Card className='p-4'>
+          <p className='text-sm text-gray-600'>Average Risk Score</p>
+          <p className='text-3xl font-bold mt-2 text-gray-900'>
+            {avgRisk.toFixed(0)}
+          </p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">High Risk Tenders</p>
-          <p className="text-3xl font-bold mt-2 text-red-600">{highRiskTenders}</p>
+        <Card className='p-4'>
+          <p className='text-sm text-gray-600'>High Risk Tenders</p>
+          <p className='text-3xl font-bold mt-2 text-red-600'>
+            {highRiskTenders}
+          </p>
         </Card>
       </div>
 
-      <Card className="p-6">
-        <Tabs defaultValue="analysis" className="space-y-4">
+      <Card className='p-6'>
+        <Tabs defaultValue='analysis' className='space-y-4'>
           <TabsList>
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="spending">Spending</TabsTrigger>
-            <TabsTrigger value="tenders">Tenders</TabsTrigger>
+            <TabsTrigger value='analysis'>Analysis</TabsTrigger>
+            <TabsTrigger value='spending'>Spending</TabsTrigger>
+            <TabsTrigger value='tenders'>Tenders</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="analysis" className="space-y-4">
-            <div className="space-y-4">
+          <TabsContent value='analysis' className='space-y-4'>
+            <div className='space-y-4'>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Procurement Trends</h3>
-                <ResponsiveContainer width="100%" height={300}>
+                <h3 className='font-semibold text-gray-900 mb-3'>
+                  Procurement Trends
+                </h3>
+                <ResponsiveContainer width='100%' height={300}>
                   <LineChart data={monthlyTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
+                    <CartesianGrid strokeDasharray='3 3' />
+                    <XAxis dataKey='month' />
                     <YAxis />
-                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                    <Line type="monotone" dataKey="amount" stroke="#2563EB" strokeWidth={2} />
+                    <Tooltip
+                      formatter={value => formatCurrency(value as number)}
+                    />
+                    <Line
+                      type='monotone'
+                      dataKey='amount'
+                      stroke='#2563EB'
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Risk Assessment</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Low Risk Tenders</span>
-                    <span className="font-medium">{entityTenders.filter((t) => t.corruptionRisk < 40).length}</span>
+                <h3 className='font-semibold text-gray-900 mb-3'>
+                  Risk Assessment
+                </h3>
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-gray-600'>Low Risk Tenders</span>
+                    <span className='font-medium'>
+                      {entityTenders.filter(t => t.risk_score < 40).length}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Medium Risk Tenders</span>
-                    <span className="font-medium">{entityTenders.filter((t) => t.corruptionRisk >= 40 && t.corruptionRisk < 70).length}</span>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-gray-600'>Medium Risk Tenders</span>
+                    <span className='font-medium'>
+                      {
+                        entityTenders.filter(
+                          t => t.risk_score >= 40 && t.risk_score < 70,
+                        ).length
+                      }
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">High Risk Tenders</span>
-                    <span className="font-medium text-red-600">{highRiskTenders}</span>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-gray-600'>High Risk Tenders</span>
+                    <span className='font-medium text-red-600'>
+                      {highRiskTenders}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="spending" className="space-y-4">
+          <TabsContent value='spending' className='space-y-4'>
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Spending by Category</h3>
-              <ResponsiveContainer width="100%" height={300}>
+              <h3 className='font-semibold text-gray-900 mb-3'>
+                Spending by Category
+              </h3>
+              <ResponsiveContainer width='100%' height={300}>
                 <BarChart data={spendingByCategory}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" angle={-45} textAnchor="end" height={80} />
+                  <CartesianGrid strokeDasharray='3 3' />
+                  <XAxis
+                    dataKey='category'
+                    angle={-45}
+                    textAnchor='end'
+                    height={80}
+                  />
                   <YAxis />
-                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                  <Bar dataKey="amount" fill="#10B981" />
+                  <Tooltip
+                    formatter={value => formatCurrency(value as number)}
+                  />
+                  <Bar dataKey='amount' fill='#10B981' />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </TabsContent>
 
-          <TabsContent value="tenders" className="space-y-4">
-            <div className="space-y-2">
-              {entityTenders.slice(0, 10).map((tender) => (
-                <div key={tender.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{tender.title}</p>
-                      <p className="text-sm text-gray-600">{tender.referenceNumber}</p>
+          <TabsContent value='tenders' className='space-y-4'>
+            <div className='space-y-2'>
+              {entityTenders.slice(0, 10).map(tender => (
+                <div
+                  key={tender.id}
+                  className='border border-gray-200 rounded-lg p-3 hover:bg-gray-50'
+                >
+                  <div className='flex items-start justify-between gap-2'>
+                    <div className='flex-1'>
+                      <p className='font-medium text-gray-900'>
+                        {tender.title}
+                      </p>
+                      <p className='text-sm text-gray-600'>
+                        {tender.tender_number}
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">{formatCurrency(tender.budgetedAmount)}</p>
+                    <div className='text-right'>
+                      <p className='font-medium text-gray-900'>
+                        {formatCurrency(tender.amount)}
+                      </p>
                       <Badge
                         className={
-                          tender.corruptionRisk >= 70
+                          tender.risk_score >= 70
                             ? 'bg-red-100 text-red-800'
-                            : tender.corruptionRisk >= 40
+                            : tender.risk_score >= 40
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-green-100 text-green-800'
                         }
                       >
-                        Risk: {tender.corruptionRisk}
+                        Risk: {tender.risk_score}
                       </Badge>
                     </div>
                   </div>
@@ -185,5 +252,5 @@ export default function EntityDetailPage({ params }: { params: { id: string } })
         </Tabs>
       </Card>
     </div>
-  )
+  );
 }
