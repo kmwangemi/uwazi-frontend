@@ -179,7 +179,7 @@ export default function DashboardPage() {
             <XAxis type='number' />
             <YAxis dataKey='county' type='category' width={90} />
             <Tooltip
-              formatter={value => `KSh ${value.toFixed(1)}B`}
+              formatter={value => `KSh ${Number(value).toFixed(1)}B`}
               labelFormatter={label => label}
             />
             <Bar dataKey='savings' fill='#10B981' />

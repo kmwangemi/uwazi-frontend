@@ -1,4 +1,5 @@
-import type { ProcuringEntity } from '@/types/entity';
+import { DashboardStats } from '@/types/common';
+import type { procuring_entity } from '@/types/entity';
 import type { Investigation } from '@/types/investigation';
 import type { PublicReport } from '@/types/report';
 import type { Supplier } from '@/types/supplier';
@@ -20,6 +21,7 @@ export const mockTenders: Tender[] = Array.from({ length: 50 }, (_, i) => ({
   ][i % 8],
   description: 'Procurement of goods and services for county operations',
   amount: Math.floor(Math.random() * 1000000000) + 100000,
+  tender_type: ['Open', 'Restricted', 'Direct'][i % 3] as any,
   procuring_entity: [
     'Nairobi County',
     'Ministry of Health',
@@ -81,6 +83,7 @@ export const mockSuppliers: Supplier[] = Array.from({ length: 30 }, (_, i) => ({
   business_address: `P.O. Box ${1000 + i}, Nairobi`,
   physical_address: Math.random() > 0.5 ? `Physical Address ${i + 1}` : null,
   tax_pin: `A${String(i + 1).padStart(8, '0')}X`,
+  county: KENYA_COUNTIES[i % KENYA_COUNTIES.length],
   registration_date: new Date(
     Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000,
   )
@@ -101,18 +104,23 @@ export const mockSuppliers: Supplier[] = Array.from({ length: 30 }, (_, i) => ({
     },
   ],
   contact_email: `contact${i}@supplier.com`,
+  completed_tenders: Math.floor(Math.random() * 20) + 1,
   contact_phone: `+254712345${String(i).padStart(3, '0')}`,
   is_verified: Math.random() > 0.4,
+  verification_status: Math.random() > 0.7 ? 'Flagged' : 'Verified',
   risk_score: Math.floor(Math.random() * 100),
   total_contracts: Math.floor(Math.random() * 20) + 1,
   total_contract_value: Math.floor(Math.random() * 500000000) + 10000000,
   flagged_contracts: Math.floor(Math.random() * 5),
+  registered_year: new Date(
+    Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000,
+  ).getFullYear(),
   created_at: new Date(
     Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000,
   ).toISOString(),
 }));
 
-export const mockEntities: ProcuringEntity[] = Array.from(
+export const mockEntities: procuring_entity[] = Array.from(
   { length: 20 },
   (_, i) => ({
     id: i + 1,
@@ -139,7 +147,10 @@ export const mockInvestigations: Investigation[] = Array.from(
   (_, i) => ({
     id: i + 1,
     tender_id: Math.floor(Math.random() * 50) + 1,
+    title: `Investigation ${i + 1} on Tender TND/2024/${String(Math.floor(Math.random() * 50) + 1).padStart(3, '0')}`,
     case_number: `CASE/2024/${String(i + 1).padStart(4, '0')}`,
+    description:
+      'Detailed investigation into procurement irregularities and potential fraud.',
     investigator_id: Math.floor(Math.random() * 10) + 1,
     investigator_name: `Investigator ${Math.floor(Math.random() * 10) + 1}`,
     priority: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'][i % 4] as any,
