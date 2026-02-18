@@ -1,141 +1,109 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
-import { useAuthStore } from '@/stores/authStore'
-import { authService } from '@/services/authService'
-import { loginSchema, type LoginFormData } from '@/lib/validations'
-import { AlertCircle } from 'lucide-react'
+import { PasswordInput } from '@/components/password-input';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useLogin } from '@/hooks/queries/useLogin';
+import { handleApiError } from '@/lib/api';
+import { loginSchema, type LoginFormValues } from '@/lib/validations';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useForm } from 'react-hook-form';
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { login } = useAuthStore()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [rememberMe, setRememberMe] = useState(false)
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
+  const { mutate: login, isPending, error } = useLogin();
+  const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-  })
-
-  const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await authService.login(data.email, data.password)
-      login(response.token, response.user)
-
-      if (rememberMe) {
-        localStorage.setItem('rememberMe', 'true')
-        localStorage.setItem('rememberEmail', data.email)
-      }
-
-      router.push('/dashboard')
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Login failed. Please try again.'
-      )
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  });
+  const onSubmit = (values: LoginFormValues) => login(values);
   return (
-    <Card className="p-8">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {error && (
-          <div className="flex gap-3 rounded-lg bg-red-50 p-4 text-sm text-red-700">
-            <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
-            <p>{error}</p>
-          </div>
-        )}
-
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email Address
-          </label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="investigator@eacc.go.ke"
-            className="mt-2"
-            {...register('email')}
-            disabled={isLoading}
-          />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+    <Card className='p-8'>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+          {error && (
+            <div className='mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3'>
+              <AlertCircle className='h-5 w-5 text-red-600 shrink-0 mt-0.5' />
+              <p className='text-sm font-medium text-red-900'>
+                {handleApiError(error)}
+              </p>
+            </div>
           )}
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <Link href="#" className="text-sm text-primary hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-          <Input
-            id="password"
-            type="password"
-            placeholder="Enter your password"
-            className="mt-2"
-            {...register('password')}
-            disabled={isLoading}
+          <FormField
+            control={form.control}
+            name='username'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email Address</FormLabel>
+                <FormControl>
+                  <Input
+                    type='email'
+                    placeholder='investigator@eacc.go.ke'
+                    disabled={isPending}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.password && (
-            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="remember"
-            checked={rememberMe}
-            onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-            disabled={isLoading}
+          <FormField
+            control={form.control}
+            name='password'
+            render={({ field }) => (
+              <FormItem>
+                <div className='flex items-center justify-between'>
+                  <FormLabel>Password</FormLabel>
+                  <Link
+                    href='#'
+                    className='text-sm text-primary hover:underline'
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <FormControl>
+                  <PasswordInput
+                    placeholder='••••••••'
+                    {...field}
+                    disabled={isPending}
+                    className='border-gray-300'
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <label htmlFor="remember" className="cursor-pointer text-sm text-gray-700">
-            Remember me
-          </label>
-        </div>
-
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={isLoading}
-          size="lg"
-        >
-          {isLoading ? (
-            <LoadingSpinner size="sm" text="" />
-          ) : (
-            'Sign in'
-          )}
-        </Button>
-      </form>
-
-      <div className="mt-6 border-t border-gray-200 pt-6 text-center">
-        <p className="text-sm text-gray-600">
-          Demo credentials:<br/>
-          <span className="font-mono text-xs">demo@procmon.ke / password</span>
+          <Button
+            type='submit'
+            className='w-full'
+            disabled={isPending}
+            size='lg'
+          >
+            {isPending ? <LoadingSpinner size='sm' text='' /> : 'Sign in'}
+          </Button>
+        </form>
+      </Form>
+      <div className='mt-2 border-t border-gray-200 pt-6 text-center'>
+        <p className='text-sm text-gray-600'>
+          Demo credentials:
+          <br />
+          <span className='font-mono text-xs'>demo@procmon.ke / password</span>
         </p>
       </div>
     </Card>
-  )
+  );
 }
