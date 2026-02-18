@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { mockTenders, mockDashboardData } from '@/lib/mockData'
+import { mockTenders } from '@/lib/mockData'
 import {
   BarChart,
   Bar,
