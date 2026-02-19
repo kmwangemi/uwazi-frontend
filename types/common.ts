@@ -10,6 +10,13 @@ export interface DashboardStats {
   top_corrupt_entities: EntityRiskData[];
 }
 
+export interface DecodedToken {
+  sub: string;
+  // role: string;
+  iat: number;
+  exp: number;
+}
+
 export interface RiskDistribution {
   critical: number;
   high: number;

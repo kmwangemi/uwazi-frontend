@@ -101,7 +101,7 @@ export default function LoginPage() {
         <p className='text-sm text-gray-600'>
           Demo credentials:
           <br />
-          <span className='font-mono text-xs'>demo@procmon.ke / password</span>
+          <span className='font-mono text-xs'>demo@procmon.ke / Admin@123</span>
         </p>
       </div>
     </Card>

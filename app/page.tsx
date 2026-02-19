@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 export default function RootPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  console.log('isAuthenticated:', isAuthenticated);
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/dashboard');
