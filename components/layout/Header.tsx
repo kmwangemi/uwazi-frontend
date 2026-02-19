@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { capitalizeFirstLetter, firstLetter } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { LogOut, Menu, Settings } from 'lucide-react';
@@ -18,19 +19,14 @@ export function Header() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { toggleSidebar } = useUIStore();
-
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
-
-  const initials =
-    user?.name
-      ?.split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase() || 'U';
-
+  const initials = `${firstLetter(user?.first_name ?? '')}${firstLetter(user?.last_name ?? '')}`;
+  const userName =
+    `${capitalizeFirstLetter(user?.first_name ?? '')} ${capitalizeFirstLetter(user?.last_name ?? '')}`.trim() ||
+    'Unknown User';
   return (
     <header className='flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 py-4'>
       <div className='flex items-center gap-4'>
@@ -59,8 +55,10 @@ export function Header() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-56'>
           <div className='px-2 py-1.5'>
-            <p className='text-sm font-medium text-gray-900'>{user?.name}</p>
-            <p className='text-xs text-gray-600'>{user?.role}</p>
+            <p className='text-sm font-medium text-gray-900'>{userName}</p>
+            <p className='text-xs text-gray-600'>
+              {capitalizeFirstLetter(user?.role ?? '')}
+            </p>
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push('/settings')}>
