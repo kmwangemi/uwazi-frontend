@@ -733,23 +733,23 @@ export function NewSupplierDialog({
                         className='mt-0.5 h-4 w-4 rounded border-input accent-primary shrink-0'
                       />
                     </FormControl>
-                    <FormLabel className='text-sm text-muted-foreground leading-relaxed font-normal cursor-pointer'>
+                    <label className='text-sm text-muted-foreground leading-relaxed cursor-pointer'>
                       I confirm the information provided is true and accurate.
                       This firm is not debarred by the{' '}
                       <span className='font-medium text-foreground'>
                         Public Procurement Regulatory Authority (PPRA)
                       </span>
-                      , is tax-compliant with{' '}
+                      {', '}is tax-compliant with{' '}
                       <span className='font-medium text-foreground'>
                         Kenya Revenue Authority (KRA)
                       </span>
-                      , and has not engaged in corrupt or collusive practices
-                      per the{' '}
+                      {', '}and has not engaged in corrupt or collusive
+                      practices per the{' '}
                       <span className='font-medium text-foreground'>
                         Anti-Corruption &amp; Economic Crimes Act, 2003
                       </span>
-                      . *
-                    </FormLabel>
+                      {'. *'}
+                    </label>
                   </div>
                   <FormMessage />
                 </FormItem>
