@@ -8,8 +8,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -20,13 +27,13 @@ import {
 import { KENYA_COUNTIES, PROCUREMENT_CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, FileText, Upload, X } from 'lucide-react';
+import { FileText, Upload, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-// ─── Constants (move to /lib/constants.ts) ────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const PROCUREMENT_METHODS = [
   'Open National Tender (ONT)',
@@ -145,16 +152,6 @@ interface AttachedFile {
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return (
-    <p className='flex items-center gap-1 text-xs text-destructive mt-1'>
-      <AlertCircle className='h-3 w-3 shrink-0' />
-      {message}
-    </p>
-  );
-}
-
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <h3 className='text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-2'>
@@ -173,14 +170,11 @@ function FileAttachmentSection({
   onChange: (files: AttachedFile[]) => void;
 }) {
   const [dragging, setDragging] = useState(false);
-
   const addFiles = useCallback(
     (incoming: FileList | null) => {
       if (!incoming) return;
-
       const valid: AttachedFile[] = [];
       const errors: string[] = [];
-
       Array.from(incoming).forEach(file => {
         if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
           errors.push(`"${file.name}" — unsupported format`);
@@ -202,7 +196,6 @@ function FileAttachmentSection({
             'Other Supporting Document',
         });
       });
-
       errors.forEach(e => toast.error(e));
       if (valid.length) onChange([...files, ...valid]);
     },
@@ -221,7 +214,6 @@ function FileAttachmentSection({
 
   return (
     <div className='space-y-3'>
-      {/* Drop zone */}
       <label
         htmlFor='file-upload'
         className={cn(
@@ -268,14 +260,11 @@ function FileAttachmentSection({
           className='sr-only'
           onChange={e => {
             addFiles(e.target.files);
-            // reset input so the same file can be re-added after removal
             e.target.value = '';
           }}
           disabled={files.length >= MAX_FILES}
         />
       </label>
-
-      {/* Attached files list */}
       {files.length > 0 && (
         <ul className='space-y-2'>
           {files.map(f => (
@@ -283,8 +272,7 @@ function FileAttachmentSection({
               key={f.id}
               className='flex items-start gap-3 rounded-md border bg-muted/30 px-3 py-2.5'
             >
-              <FileText className='h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0' />
-
+              <FileText className='h-4 w-4 text-muted-foreground mt-0.5 shrink-0' />
               <div className='flex-1 min-w-0 space-y-1.5'>
                 <p className='text-sm font-medium truncate' title={f.file.name}>
                   {f.file.name}
@@ -304,11 +292,10 @@ function FileAttachmentSection({
                   ))}
                 </select>
               </div>
-
               <button
                 type='button'
                 onClick={() => removeFile(f.id)}
-                className='text-muted-foreground hover:text-destructive transition-colors flex-shrink-0 mt-0.5'
+                className='text-muted-foreground hover:text-destructive transition-colors shrink-0 mt-0.5'
                 aria-label={`Remove ${f.file.name}`}
               >
                 <X className='h-4 w-4' />
@@ -338,13 +325,7 @@ export function NewTenderDialog({
 }: NewTenderDialogProps) {
   const [attachments, setAttachments] = useState<AttachedFile[]>([]);
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<TenderFormValues>({
+  const form = useForm<TenderFormValues>({
     resolver: zodResolver(tenderSchema),
     defaultValues: {
       entityName: '',
@@ -370,7 +351,7 @@ export function NewTenderDialog({
     try {
       onSubmit?.({ ...data, attachments });
       toast.success('Tender created successfully');
-      reset();
+      form.reset();
       setAttachments([]);
       onOpenChange(false);
     } catch {
@@ -379,7 +360,7 @@ export function NewTenderDialog({
   };
 
   const handleClose = () => {
-    reset();
+    form.reset();
     setAttachments([]);
     onOpenChange(false);
   };
@@ -395,370 +376,416 @@ export function NewTenderDialog({
             under the PPRA Act 2015.
           </DialogDescription>
         </DialogHeader>
-        <form
-          onSubmit={handleSubmit(onValidSubmit)}
-          className='space-y-6'
-          noValidate
-        >
-          {/* ── Basic Information ─────────────────────────────────────────── */}
-          <div className='space-y-4'>
-            <SectionHeading>Basic Information</SectionHeading>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='entityName'>Entity Name *</Label>
-                <Input
-                  id='entityName'
-                  placeholder='e.g. Kenya Medical Supplies Authority'
-                  {...register('entityName')}
-                  className={cn(
-                    errors.entityName &&
-                      'border-destructive focus-visible:ring-destructive',
-                  )}
-                />
-                <FieldError message={errors.entityName?.message} />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='entityType'>Entity Type *</Label>
-                <Controller
-                  name='entityType'
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id='entityType'
-                        className={cn(
-                          errors.entityType && 'border-destructive',
-                        )}
-                      >
-                        <SelectValue placeholder='Select type' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ENTITY_TYPES.map(t => (
-                          <SelectItem key={t} value={t}>
-                            {t}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <FieldError message={errors.entityType?.message} />
-              </div>
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='title'>Tender Title *</Label>
-              <Input
-                id='title'
-                placeholder='e.g. Supply and Delivery of Medical Equipment'
-                {...register('title')}
-                className={cn(
-                  errors.title &&
-                    'border-destructive focus-visible:ring-destructive',
-                )}
-              />
-              <FieldError message={errors.title?.message} />
-            </div>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='tender_number'>Reference Number *</Label>
-                <Input
-                  id='tender_number'
-                  placeholder='e.g. MOH/OT/001/2025-26'
-                  {...register('tender_number')}
-                  className={cn(
-                    errors.tender_number &&
-                      'border-destructive focus-visible:ring-destructive',
-                  )}
-                />
-                <FieldError message={errors.tender_number?.message} />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='category'>Category *</Label>
-                <Controller
-                  name='category'
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id='category'
-                        className={cn(errors.category && 'border-destructive')}
-                      >
-                        <SelectValue placeholder='Select category' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PROCUREMENT_CATEGORIES.map(cat => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <FieldError message={errors.category?.message} />
-              </div>
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='description'>Description / Scope of Works</Label>
-              <textarea
-                id='description'
-                placeholder='Describe the goods, works or services required, including quantities and specifications'
-                rows={3}
-                {...register('description')}
-                className='w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none'
-              />
-            </div>
-          </div>
-          {/* ── Procurement Details ───────────────────────────────────────── */}
-          <div className='space-y-4'>
-            <SectionHeading>Procurement Details</SectionHeading>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='procurementMethod'>Procurement Method *</Label>
-                <Controller
-                  name='procurementMethod'
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id='procurementMethod'
-                        className={cn(
-                          errors.procurementMethod && 'border-destructive',
-                        )}
-                      >
-                        <SelectValue placeholder='Select method' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PROCUREMENT_METHODS.map(m => (
-                          <SelectItem key={m} value={m}>
-                            {m}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <FieldError message={errors.procurementMethod?.message} />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='sourceOfFunds'>Source of Funds *</Label>
-                <Controller
-                  name='sourceOfFunds'
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id='sourceOfFunds'
-                        className={cn(
-                          errors.sourceOfFunds && 'border-destructive',
-                        )}
-                      >
-                        <SelectValue placeholder='Select source' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SOURCE_OF_FUNDS.map(s => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <FieldError message={errors.sourceOfFunds?.message} />
-              </div>
-            </div>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='amount'>Budget Amount (KSh) *</Label>
-                <Input
-                  id='amount'
-                  type='number'
-                  placeholder='0.00'
-                  {...register('amount')}
-                  className={cn(
-                    errors.amount &&
-                      'border-destructive focus-visible:ring-destructive',
-                  )}
-                />
-                <FieldError message={errors.amount?.message} />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='county'>County *</Label>
-                <Controller
-                  name='county'
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id='county'
-                        className={cn(errors.county && 'border-destructive')}
-                      >
-                        <SelectValue placeholder='Select county' />
-                      </SelectTrigger>
-                      <SelectContent className='max-h-64'>
-                        {KENYA_COUNTIES.map(county => (
-                          <SelectItem key={county} value={county}>
-                            {county}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <FieldError message={errors.county?.message} />
-              </div>
-            </div>
-          </div>
-          {/* ── Timeline ──────────────────────────────────────────────────── */}
-          <div className='space-y-4'>
-            <SectionHeading>Timeline</SectionHeading>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='deadline'>Submission Deadline *</Label>
-                <Input
-                  id='deadline'
-                  type='date'
-                  {...register('deadline')}
-                  className={cn(
-                    errors.deadline &&
-                      'border-destructive focus-visible:ring-destructive',
-                  )}
-                />
-                <FieldError message={errors.deadline?.message} />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='openingDate'>
-                  Opening Date *{' '}
-                  <span className='text-xs text-muted-foreground font-normal'>
-                    (after deadline)
-                  </span>
-                </Label>
-                <Input
-                  id='openingDate'
-                  type='date'
-                  {...register('openingDate')}
-                  className={cn(
-                    errors.openingDate &&
-                      'border-destructive focus-visible:ring-destructive',
-                  )}
-                />
-                <FieldError message={errors.openingDate?.message} />
-              </div>
-            </div>
-          </div>
-          {/* ── Tender Security ───────────────────────────────────────────── */}
-          <div className='space-y-4'>
-            <SectionHeading>Tender Security</SectionHeading>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='tenderSecurityForm'>Security Form</Label>
-                <Controller
-                  name='tenderSecurityForm'
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id='tenderSecurityForm'>
-                        <SelectValue placeholder='Select type' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TENDER_SECURITY_FORMS.map(s => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='tenderSecurityAmount'>
-                  Security Amount (KSh){' '}
-                  <span className='text-xs text-muted-foreground font-normal'>
-                    (1–3% of budget)
-                  </span>
-                </Label>
-                <Input
-                  id='tenderSecurityAmount'
-                  type='number'
-                  placeholder='0.00'
-                  {...register('tenderSecurityAmount')}
-                />
-              </div>
-            </div>
-          </div>
-          {/* ── Attachments ───────────────────────────────────────────────── */}
-          <div className='space-y-4'>
-            <SectionHeading>Attachments</SectionHeading>
-            <FileAttachmentSection
-              files={attachments}
-              onChange={setAttachments}
-            />
-          </div>
-          {/* ── Contact ───────────────────────────────────────────────────── */}
-          <div className='space-y-4'>
-            <SectionHeading>Contact</SectionHeading>
-            <div className='space-y-2'>
-              <Label htmlFor='contactEmail'>SCM Officer Email</Label>
-              <Input
-                id='contactEmail'
-                type='email'
-                placeholder='procurement@entity.go.ke'
-                {...register('contactEmail')}
-                className={cn(
-                  errors.contactEmail &&
-                    'border-destructive focus-visible:ring-destructive',
-                )}
-              />
-              <FieldError message={errors.contactEmail?.message} />
-            </div>
-          </div>
-          {/* ── Compliance Declaration ────────────────────────────────────── */}
-          <div
-            className={cn(
-              'rounded-md border p-4',
-              errors.declarationAccepted
-                ? 'border-destructive bg-destructive/5'
-                : 'bg-muted/50',
-            )}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onValidSubmit)}
+            className='space-y-6'
+            noValidate
           >
-            <label className='flex items-start gap-3 cursor-pointer'>
-              <input
-                type='checkbox'
-                {...register('declarationAccepted')}
-                className='mt-0.5 h-4 w-4 rounded border-input accent-primary shrink-0'
+            {/* ── Basic Information ──────────────────────────────────────── */}
+            <div className='space-y-4'>
+              <SectionHeading>Basic Information</SectionHeading>
+              <div className='grid grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='entityName'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Entity Name *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='e.g. Kenya Medical Supplies Authority'
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='entityType'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Entity Type *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select type' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ENTITY_TYPES.map(t => (
+                            <SelectItem key={t} value={t}>
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name='title'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tender Title *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='e.g. Supply and Delivery of Medical Equipment'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <span className='text-sm text-muted-foreground leading-relaxed'>
-                I confirm this tender complies with the{' '}
-                <span className='font-medium text-foreground'>
-                  Public Procurement and Asset Disposal Act, 2015
-                </span>
-                . All information is accurate, no corrupt practices have been
-                engaged in, and this notice will be published on the{' '}
-                <span className='font-medium text-foreground'>
-                  PPRA tenders.go.ke portal
-                </span>
-                . *
-              </span>
-            </label>
-            <FieldError message={errors.declarationAccepted?.message} />
-          </div>
-          {/* ── Actions ───────────────────────────────────────────────────── */}
-          <div className='flex gap-3 justify-end pt-4 border-t'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={handleClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button type='submit' disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Tender'}
-            </Button>
-          </div>
-        </form>
+              <div className='grid grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='tender_number'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reference Number *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='e.g. MOH/OT/001/2025-26'
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='category'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select category' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PROCUREMENT_CATEGORIES.map(cat => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name='description'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description / Scope of Works</FormLabel>
+                    <FormControl>
+                      <textarea
+                        placeholder='Describe the goods, works or services required, including quantities and specifications'
+                        rows={3}
+                        {...field}
+                        className='w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none'
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            {/* ── Procurement Details ────────────────────────────────────── */}
+            <div className='space-y-4'>
+              <SectionHeading>Procurement Details</SectionHeading>
+              <div className='grid grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='procurementMethod'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Procurement Method *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select method' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PROCUREMENT_METHODS.map(m => (
+                            <SelectItem key={m} value={m}>
+                              {m}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='sourceOfFunds'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Source of Funds *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select source' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {SOURCE_OF_FUNDS.map(s => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className='grid grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='amount'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Budget Amount (KSh) *</FormLabel>
+                      <FormControl>
+                        <Input type='number' placeholder='0.00' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='county'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>County *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select county' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className='max-h-64'>
+                          {KENYA_COUNTIES.map(county => (
+                            <SelectItem key={county} value={county}>
+                              {county}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            {/* ── Timeline ──────────────────────────────────────────────── */}
+            <div className='space-y-4'>
+              <SectionHeading>Timeline</SectionHeading>
+              <div className='grid grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='deadline'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Submission Deadline *</FormLabel>
+                      <FormControl>
+                        <Input type='date' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='openingDate'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Opening Date *{' '}
+                        <span className='text-xs text-muted-foreground font-normal'>
+                          (after deadline)
+                        </span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input type='date' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            {/* ── Tender Security ────────────────────────────────────────── */}
+            <div className='space-y-4'>
+              <SectionHeading>Tender Security</SectionHeading>
+              <div className='grid grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='tenderSecurityForm'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Security Form</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select type' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TENDER_SECURITY_FORMS.map(s => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='tenderSecurityAmount'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Security Amount (KSh){' '}
+                        <span className='text-xs text-muted-foreground font-normal'>
+                          (1–3% of budget)
+                        </span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input type='number' placeholder='0.00' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            {/* ── Attachments ───────────────────────────────────────────── */}
+            <div className='space-y-4'>
+              <SectionHeading>Attachments</SectionHeading>
+              <FileAttachmentSection
+                files={attachments}
+                onChange={setAttachments}
+              />
+            </div>
+            {/* ── Contact ───────────────────────────────────────────────── */}
+            <div className='space-y-4'>
+              <SectionHeading>Contact</SectionHeading>
+              <FormField
+                control={form.control}
+                name='contactEmail'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>SCM Officer Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='email'
+                        placeholder='procurement@entity.go.ke'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            {/* ── Compliance Declaration ─────────────────────────────────── */}
+            <FormField
+              control={form.control}
+              name='declarationAccepted'
+              render={({ field }) => (
+                <FormItem
+                  className={cn(
+                    'rounded-md border p-4',
+                    form.formState.errors.declarationAccepted
+                      ? 'border-destructive bg-destructive/5'
+                      : 'bg-muted/50',
+                  )}
+                >
+                  <div className='flex items-start gap-3'>
+                    <FormControl>
+                      <input
+                        type='checkbox'
+                        checked={field.value === true}
+                        onChange={e =>
+                          field.onChange(e.target.checked ? true : undefined)
+                        }
+                        className='mt-0.5 h-4 w-4 rounded border-input accent-primary shrink-0'
+                      />
+                    </FormControl>
+                    <FormLabel className='text-sm text-muted-foreground leading-relaxed font-normal cursor-pointer'>
+                      I confirm this tender complies with the{' '}
+                      <span className='font-medium text-foreground'>
+                        Public Procurement and Asset Disposal Act, 2015
+                      </span>
+                      . All information is accurate, no corrupt practices have
+                      been engaged in, and this notice will be published on the{' '}
+                      <span className='font-medium text-foreground'>
+                        PPRA tenders.go.ke portal
+                      </span>
+                      . *
+                    </FormLabel>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {/* ── Actions ───────────────────────────────────────────────── */}
+            <div className='flex gap-3 justify-end pt-4 border-t'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={handleClose}
+                disabled={form.formState.isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type='submit' disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Creating...' : 'Create Tender'}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
