@@ -753,18 +753,19 @@ export function NewTenderDialog({
                         className='mt-0.5 h-4 w-4 rounded border-input accent-primary shrink-0'
                       />
                     </FormControl>
-                    <FormLabel className='text-sm text-muted-foreground leading-relaxed font-normal cursor-pointer'>
+                    <label className='text-sm text-muted-foreground leading-relaxed cursor-pointer'>
                       I confirm this tender complies with the{' '}
                       <span className='font-medium text-foreground'>
                         Public Procurement and Asset Disposal Act, 2015
                       </span>
-                      . All information is accurate, no corrupt practices have
-                      been engaged in, and this notice will be published on the{' '}
+                      {'. '}All information is accurate, no corrupt practices
+                      have been engaged in, and this notice will be published on
+                      the{' '}
                       <span className='font-medium text-foreground'>
                         PPRA tenders.go.ke portal
                       </span>
-                      . *
-                    </FormLabel>
+                      {'. *'}
+                    </label>
                   </div>
                   <FormMessage />
                 </FormItem>
