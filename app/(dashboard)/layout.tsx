@@ -4,7 +4,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 
 export default function DashboardLayoutPage({
   children,
@@ -12,21 +12,19 @@ export default function DashboardLayoutPage({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
-  const [isReady, setIsReady] = useState(false);
+  const { token, hasHydrated } = useAuthStore();
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    } else {
-      setIsReady(true);
+    if (hasHydrated && !token) {
+      router.replace('/login');
     }
-  }, [isAuthenticated, router]);
-  if (!isReady) {
+  }, [token, hasHydrated, router]);
+  if (!hasHydrated) {
     return (
       <div className='flex h-screen items-center justify-center bg-gray-50'>
         <LoadingSpinner text='Loading...' />
       </div>
     );
   }
+  if (!token) return null;
   return <DashboardLayout>{children}</DashboardLayout>;
 }

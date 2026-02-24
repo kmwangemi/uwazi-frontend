@@ -13,7 +13,7 @@ export const authService = {
       // Mock login for development
       if (email && password) {
         return {
-          token: 'mock-token-' + Date.now(),
+          access_token: 'mock-token-' + Date.now(),
           user: {
             id: '1',
             email,
