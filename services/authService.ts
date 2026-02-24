@@ -14,6 +14,7 @@ export const authService = {
       if (email && password) {
         return {
           access_token: 'mock-token-' + Date.now(),
+          token_type: 'bearer',
           user: {
             id: '1',
             email,
