@@ -7,15 +7,15 @@ import { useEffect } from 'react';
 
 export default function RootPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
-  console.log('isAuthenticated:', isAuthenticated);
+  const { token, hasHydrated } = useAuthStore();
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/dashboard');
+    if (!hasHydrated) return;
+    if (token) {
+      router.replace('/dashboard');
     } else {
-      router.push('/login');
+      router.replace('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [token, hasHydrated, router]);
   return (
     <div className='flex h-screen items-center justify-center bg-gray-50'>
       <LoadingSpinner text='Redirecting...' />
