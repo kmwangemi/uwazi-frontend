@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { exportToCSV } from '@/lib/exportUtils';
-import { mockSuppliers } from '@/lib/mockData';
 import {
   AlertCircle,
   CheckCircle,
@@ -23,8 +22,9 @@ import {
   Search,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useSuppliers } from '@/hooks/queries/useSuppliers';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -36,32 +36,15 @@ export default function SuppliersPage() {
   const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
   const [newSupplierDialogOpen, setNewSupplierDialogOpen] = useState(false);
 
-  const filteredSuppliers = useMemo(() => {
-    let result = [...mockSuppliers];
+  const { data: suppliersData, isLoading } = useSuppliers({
+    page: currentPage,
+    limit: itemsPerPage,
+    verificationFilter: verificationFilter === 'all' ? undefined : verificationFilter,
+    search: searchQuery || undefined,
+  });
 
-    if (verificationFilter !== 'all') {
-      result = result.filter(s => s.verification_status === verificationFilter);
-    }
-
-    if (searchQuery) {
-      result = result.filter(
-        s =>
-          s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.registration_number
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          s.county.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-
-    return result;
-  }, [verificationFilter, searchQuery]);
-
-  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
-  const paginatedSuppliers = filteredSuppliers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const filteredSuppliers = suppliersData?.data || [];
+  const totalPages = Math.ceil((suppliersData?.meta?.total || 0) / itemsPerPage);
 
   const getVerificationColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -171,69 +154,78 @@ export default function SuppliersPage() {
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {paginatedSuppliers.map(supplier => (
-            <div
-              key={supplier.id}
-              className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer'
-              onClick={() => router.push(`/suppliers/${supplier.id}`)}
-            >
-              <div className='space-y-3'>
-                <div className='flex items-start justify-between gap-2'>
-                  <div>
-                    <h3 className='font-semibold text-gray-900'>
-                      {supplier.name}
-                    </h3>
-                    <p className='text-sm text-gray-600'>
-                      {supplier.registration_number}
-                    </p>
+          {isLoading ? (
+            <div className='col-span-1 md:col-span-2 lg:col-span-3 py-8 text-center text-gray-500'>
+              Loading suppliers...
+            </div>
+          ) : filteredSuppliers.length === 0 ? (
+            <div className='col-span-1 md:col-span-2 lg:col-span-3 py-8 text-center text-gray-500'>
+              No suppliers found matching your criteria.
+            </div>
+          ) : (
+            filteredSuppliers.map(supplier => (
+              <div
+                key={supplier.id}
+                className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer'
+                onClick={() => router.push(`/suppliers/${supplier.id}`)}
+              >
+                <div className='space-y-3'>
+                  <div className='flex items-start justify-between gap-2'>
+                    <div>
+                      <h3 className='font-semibold text-gray-900'>
+                        {supplier.name}
+                      </h3>
+                      <p className='text-sm text-gray-600'>
+                        {supplier.registration_number}
+                      </p>
+                    </div>
+                    <Badge
+                      className={getVerificationColor(
+                        supplier.verification_status,
+                      )}
+                    >
+                      {supplier.verification_status}
+                    </Badge>
                   </div>
-                  <Badge
-                    className={getVerificationColor(
-                      supplier.verification_status,
-                    )}
-                  >
-                    {supplier.verification_status}
-                  </Badge>
-                </div>
 
-                <div className='space-y-1 text-sm'>
-                  <div className='flex items-center gap-2'>
-                    <span className='text-gray-600'>Location:</span>
-                    <span className='font-medium text-gray-900'>
-                      {supplier.county}
-                    </span>
-                  </div>
-                  <div className='flex items-center gap-2'>
-                    <span className='text-gray-600'>Year Registered:</span>
-                    <span className='font-medium text-gray-900'>
-                      {supplier.registered_year}
-                    </span>
-                  </div>
-                </div>
-
-                <div className='pt-3 border-t border-gray-100'>
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center gap-1'>
-                      {getVerificationIcon(supplier.verification_status)}
-                      <span className='text-xs text-gray-600'>
-                        {supplier.completed_tenders} tenders completed
+                  <div className='space-y-1 text-sm'>
+                    <div className='flex items-center gap-2'>
+                      <span className='text-gray-600'>Location:</span>
+                      <span className='font-medium text-gray-900'>
+                        {supplier.county}
                       </span>
                     </div>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={e => {
-                        e.stopPropagation();
-                        router.push(`/suppliers/${supplier.id}`);
-                      }}
-                    >
-                      <Eye className='h-4 w-4' />
-                    </Button>
+                    <div className='flex items-center gap-2'>
+                      <span className='text-gray-600'>Year Registered:</span>
+                      <span className='font-medium text-gray-900'>
+                        {supplier.registered_year}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className='pt-3 border-t border-gray-100'>
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center gap-1'>
+                        {getVerificationIcon(supplier.verification_status)}
+                        <span className='text-xs text-gray-600'>
+                          {supplier.completed_tenders} tenders completed
+                        </span>
+                      </div>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={e => {
+                          e.stopPropagation();
+                          router.push(`/suppliers/${supplier.id}`);
+                        }}
+                      >
+                        <Eye className='h-4 w-4' />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )))}
         </div>
 
         <Pagination

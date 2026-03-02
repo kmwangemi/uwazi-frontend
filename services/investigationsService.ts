@@ -9,7 +9,7 @@ export const investigationsService = {
   ): Promise<ApiResponse<Investigation[]>> => {
     try {
       const response = await api.get<ApiResponse<Investigation[]>>(
-        '/api/investigations',
+        '/investigations',
         { params },
       );
       return response.data;
@@ -39,7 +39,7 @@ export const investigationsService = {
   getInvestigationById: async (id: number): Promise<Investigation> => {
     try {
       const response = await api.get<Investigation>(
-        `/api/investigations/${id}`,
+        `/investigations/${id}`,
       );
       return response.data;
     } catch (error) {
@@ -51,7 +51,7 @@ export const investigationsService = {
 
   createInvestigation: async (data: any) => {
     try {
-      const response = await api.post('/api/investigations', data);
+      const response = await api.post('/investigations', data);
       return response.data;
     } catch (error) {
       return { success: true, message: 'Investigation created' };
@@ -60,7 +60,7 @@ export const investigationsService = {
 
   updateInvestigation: async (id: number, data: any) => {
     try {
-      const response = await api.put(`/api/investigations/${id}`, data);
+      const response = await api.put(`/investigations/${id}`, data);
       return response.data;
     } catch (error) {
       return { success: true, message: 'Investigation updated' };
@@ -69,7 +69,7 @@ export const investigationsService = {
 
   closeInvestigation: async (id: number, outcome: string) => {
     try {
-      const response = await api.post(`/api/investigations/${id}/close`, {
+      const response = await api.post(`/investigations/${id}/close`, {
         outcome,
       });
       return response.data;
@@ -83,7 +83,7 @@ export const investigationsService = {
       const formData = new FormData();
       formData.append('file', file);
       const response = await api.post(
-        `/api/investigations/${investigationId}/evidence`,
+        `/investigations/${investigationId}/evidence`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

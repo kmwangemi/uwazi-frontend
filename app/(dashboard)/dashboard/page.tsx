@@ -3,8 +3,8 @@
 import { StatsCard } from '@/components/shared/StatsCard';
 import { Card } from '@/components/ui/card';
 import { formatCurrency, formatPercentage } from '@/lib/formatters';
-import { mockDashboardStats } from '@/lib/mockData';
 import { AlertCircle, Check, FolderOpen, TrendingUp } from 'lucide-react';
+import { useDashboardStats } from '@/hooks/queries/useDashboard';
 import {
   Bar,
   BarChart,
@@ -29,7 +29,23 @@ const RISK_COLORS = {
 };
 
 export default function DashboardPage() {
-  const stats = mockDashboardStats;
+  const { data: stats, isLoading } = useDashboardStats();
+
+  if (isLoading) {
+    return (
+      <div className='flex items-center justify-center h-96'>
+        <p className='text-gray-500'>Loading dashboard statistics...</p>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className='flex items-center justify-center h-96'>
+        <p className='text-red-500'>Failed to load dashboard statistics.</p>
+      </div>
+    );
+  }
 
   // Prepare data for charts
   const riskDistribution = [
@@ -230,13 +246,12 @@ export default function DashboardPage() {
                   </td>
                   <td className='px-4 py-3 text-right'>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                        entity.risk_score >= 75
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${entity.risk_score >= 75
                           ? 'bg-red-100 text-red-800'
                           : entity.risk_score >= 50
                             ? 'bg-orange-100 text-orange-800'
                             : 'bg-yellow-100 text-yellow-800'
-                      }`}
+                        }`}
                     >
                       {entity.risk_score}
                     </span>

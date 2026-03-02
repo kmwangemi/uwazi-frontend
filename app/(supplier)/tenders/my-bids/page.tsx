@@ -16,86 +16,9 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useMyBids } from '@/hooks/queries/useSupplierTenders';
 
-// Mock supplier bids data
-const mockSupplierBids = [
-  {
-    id: 'BID001',
-    tenderId: 1,
-    tenderTitle: 'Road Construction - Nairobi-Nakuru Highway',
-    tenderReference: 'TND/2024/001',
-    bidAmount: 45000000,
-    status: 'Awarded',
-    submittedDate: '2024-02-10',
-    deadline: '2024-03-15',
-    totalScore: 87,
-    recommendation: 'Approved',
-    paymentTerms: 'Net 60',
-    deliveryTimeline: 120,
-    feedback: 'Strong technical proposal and competitive pricing',
-  },
-  {
-    id: 'BID002',
-    tenderId: 2,
-    tenderTitle: 'School Desks and Chairs Supply',
-    tenderReference: 'TND/2024/002',
-    bidAmount: 2500000,
-    status: 'Under Evaluation',
-    submittedDate: '2024-02-12',
-    deadline: '2024-03-20',
-    totalScore: null,
-    recommendation: null,
-    paymentTerms: 'Net 30',
-    deliveryTimeline: 45,
-    feedback: null,
-  },
-  {
-    id: 'BID003',
-    tenderId: 3,
-    tenderTitle: 'IT Equipment - Laptops & Servers',
-    tenderReference: 'TND/2024/003',
-    bidAmount: 8500000,
-    status: 'Shortlisted',
-    submittedDate: '2024-02-08',
-    deadline: '2024-03-18',
-    totalScore: null,
-    recommendation: null,
-    paymentTerms: 'Progressive',
-    deliveryTimeline: 60,
-    feedback: 'Awaiting final evaluation round',
-  },
-  {
-    id: 'BID004',
-    tenderId: 4,
-    tenderTitle: 'Medical Supplies - Hospital Equipment',
-    tenderReference: 'TND/2024/004',
-    bidAmount: 12000000,
-    status: 'Not Selected',
-    submittedDate: '2024-01-25',
-    deadline: '2024-02-28',
-    totalScore: 62,
-    recommendation: 'Rejected',
-    paymentTerms: 'Net 30',
-    deliveryTimeline: 90,
-    feedback:
-      'Price significantly above budget. Recommend cost reduction strategy.',
-  },
-  {
-    id: 'BID005',
-    tenderId: 5,
-    tenderTitle: 'Vehicle Maintenance Services',
-    tenderReference: 'TND/2024/005',
-    bidAmount: 5500000,
-    status: 'Submitted',
-    submittedDate: '2024-02-14',
-    deadline: '2024-03-10',
-    totalScore: null,
-    recommendation: null,
-    paymentTerms: 'Monthly',
-    deliveryTimeline: 365,
-    feedback: null,
-  },
-];
+// Mock data moved to mockData.ts
 
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
@@ -128,18 +51,14 @@ export default function MyBidsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
 
-  const filteredBids =
-    activeTab === 'all'
-      ? mockSupplierBids
-      : mockSupplierBids.filter(b => {
-          if (activeTab === 'active')
-            return ['Submitted', 'Under Evaluation', 'Shortlisted'].includes(
-              b.status,
-            );
-          if (activeTab === 'won') return b.status === 'Awarded';
-          if (activeTab === 'rejected') return b.status === 'Not Selected';
-          return true;
-        });
+  const { data: bidsResponse, isLoading } = useMyBids({
+    page: 1, // Add pagination state if desired
+    limit: 100,
+    status: activeTab,
+  });
+
+  const filteredBids = bidsResponse?.data || [];
+  const totalBidsCount = bidsResponse?.meta?.total || 0;
 
   return (
     <div className='min-h-screen bg-background py-8 px-4'>
@@ -156,14 +75,14 @@ export default function MyBidsPage() {
           <Card className='p-4'>
             <p className='text-sm text-gray-600 mb-1'>Total Bids</p>
             <p className='text-3xl font-bold text-gray-900'>
-              {mockSupplierBids.length}
+              {totalBidsCount}
             </p>
           </Card>
           <Card className='p-4'>
             <p className='text-sm text-gray-600 mb-1'>Active Bids</p>
             <p className='text-3xl font-bold text-blue-600'>
               {
-                mockSupplierBids.filter(b =>
+                filteredBids.filter(b =>
                   ['Submitted', 'Under Evaluation', 'Shortlisted'].includes(
                     b.status,
                   ),
@@ -174,14 +93,14 @@ export default function MyBidsPage() {
           <Card className='p-4'>
             <p className='text-sm text-gray-600 mb-1'>Won</p>
             <p className='text-3xl font-bold text-green-600'>
-              {mockSupplierBids.filter(b => b.status === 'Awarded').length}
+              {filteredBids.filter(b => b.status === 'Awarded').length}
             </p>
           </Card>
           <Card className='p-4'>
             <p className='text-sm text-gray-600 mb-1'>Total Bid Value</p>
             <p className='text-2xl font-bold text-primary'>
               {formatCurrency(
-                mockSupplierBids.reduce((sum, b) => sum + b.bidAmount, 0),
+                filteredBids.reduce((sum, b) => sum + b.bidAmount, 0),
               )}
             </p>
           </Card>
@@ -190,32 +109,26 @@ export default function MyBidsPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className='mb-8'>
           <TabsList>
             <TabsTrigger value='all'>
-              All Bids ({mockSupplierBids.length})
+              All Bids
             </TabsTrigger>
             <TabsTrigger value='active'>
-              Active (
-              {
-                mockSupplierBids.filter(b =>
-                  ['Submitted', 'Under Evaluation', 'Shortlisted'].includes(
-                    b.status,
-                  ),
-                ).length
-              }
-              )
+              Active
             </TabsTrigger>
             <TabsTrigger value='won'>
-              Won ({mockSupplierBids.filter(b => b.status === 'Awarded').length}
-              )
+              Won
             </TabsTrigger>
             <TabsTrigger value='rejected'>
-              Not Selected (
-              {mockSupplierBids.filter(b => b.status === 'Not Selected').length}
-              )
+              Not Selected
             </TabsTrigger>
           </TabsList>
         </Tabs>
         {/* Bid Cards Grid */}
         <div className='space-y-4'>
+          {isLoading && (
+            <div className="text-center py-12 text-gray-500">
+              Loading your bids...
+            </div>
+          )}
           {filteredBids.map(bid => (
             <Card
               key={bid.id}
