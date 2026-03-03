@@ -15,11 +15,11 @@ import {
 } from '@/components/ui/select';
 import { exportToCSV } from '@/lib/exportUtils';
 import { formatCurrency, formatDate } from '@/lib/formatters';
-import { mockTenders } from '@/lib/mockData';
 import { Download, Eye, Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTenders, useCreateTender } from '@/hooks/queries/useTenders';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -31,33 +31,18 @@ export default function TendersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
   const [newTenderDialogOpen, setNewTenderDialogOpen] = useState(false);
-  const filteredTenders = useMemo(() => {
-    let result = [...mockTenders];
-    if (statusFilter !== 'all') {
-      result = result.filter(t => t.status === statusFilter);
-    }
-    if (riskFilter !== 'all') {
-      if (riskFilter === 'high')
-        result = result.filter(t => t.risk_score >= 70);
-      if (riskFilter === 'medium')
-        result = result.filter(t => t.risk_score >= 40 && t.risk_score < 70);
-      if (riskFilter === 'low') result = result.filter(t => t.risk_score < 40);
-    }
-    if (searchQuery) {
-      result = result.filter(
-        t =>
-          t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.tender_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.procuring_entity.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-    return result;
-  }, [statusFilter, riskFilter, searchQuery]);
-  const totalPages = Math.ceil(filteredTenders.length / itemsPerPage);
-  const paginatedTenders = filteredTenders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const { data: tendersData, isLoading } = useTenders({
+    page: currentPage,
+    limit: itemsPerPage,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    risk_level: riskFilter === 'all' ? undefined : riskFilter,
+    search: searchQuery || undefined,
+  });
+
+  const { mutate: createTender } = useCreateTender();
+
+  const filteredTenders = tendersData?.data || [];
+  const totalPages = Math.ceil((tendersData?.meta?.total || 0) / itemsPerPage);
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       Open: 'bg-green-100 text-green-800',
@@ -87,8 +72,15 @@ export default function TendersPage() {
     toast.success('Tenders exported successfully');
   };
   const handleNewTender = (tenderData: any) => {
-    toast.success('Tender will be created soon');
-    setNewTenderDialogOpen(false);
+    createTender(tenderData, {
+      onSuccess: () => {
+        toast.success('Tender created successfully');
+        setNewTenderDialogOpen(false);
+      },
+      onError: () => {
+        toast.error('Failed to create tender');
+      }
+    });
   };
   return (
     <div className='space-y-6'>
@@ -197,44 +189,57 @@ export default function TendersPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedTenders.map(tender => (
-                <tr
-                  key={tender.id}
-                  className='border-b border-gray-100 hover:bg-gray-50'
-                >
-                  <td className='py-3 px-4 text-gray-900 font-medium'>
-                    {tender.tender_number}
-                  </td>
-                  <td className='py-3 px-4 text-gray-700 max-w-xs truncate'>
-                    {tender.title}
-                  </td>
-                  <td className='py-3 px-4 text-gray-900 font-medium'>
-                    {formatCurrency(tender.amount)}
-                  </td>
-                  <td className='py-3 px-4'>
-                    <Badge className={getStatusColor(tender.status)}>
-                      {tender.status}
-                    </Badge>
-                  </td>
-                  <td className='py-3 px-4'>
-                    <RiskScoreMeter score={tender.risk_score} />
-                  </td>
-                  <td className='py-3 px-4 text-gray-600'>
-                    {formatDate(
-                      new Date(tender.submission_deadline || Date.now()),
-                    )}
-                  </td>
-                  <td className='py-3 px-4'>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={() => router.push(`/tenders/${tender.id}`)}
-                    >
-                      <Eye className='h-4 w-4' />
-                    </Button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className='py-8 text-center text-gray-500'>
+                    Loading tenders...
                   </td>
                 </tr>
-              ))}
+              ) : filteredTenders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className='py-8 text-center text-gray-500'>
+                    No tenders found matching your criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredTenders.map(tender => (
+                  <tr
+                    key={tender.id}
+                    className='border-b border-gray-100 hover:bg-gray-50'
+                  >
+                    <td className='py-3 px-4 text-gray-900 font-medium'>
+                      {tender.tender_number}
+                    </td>
+                    <td className='py-3 px-4 text-gray-700 max-w-xs truncate'>
+                      {tender.title}
+                    </td>
+                    <td className='py-3 px-4 text-gray-900 font-medium'>
+                      {formatCurrency(tender.amount)}
+                    </td>
+                    <td className='py-3 px-4'>
+                      <Badge className={getStatusColor(tender.status)}>
+                        {tender.status}
+                      </Badge>
+                    </td>
+                    <td className='py-3 px-4'>
+                      <RiskScoreMeter score={tender.risk_score} />
+                    </td>
+                    <td className='py-3 px-4 text-gray-600'>
+                      {formatDate(
+                        new Date(tender.submission_deadline || Date.now()),
+                      )}
+                    </td>
+                    <td className='py-3 px-4'>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => router.push(`/tenders/${tender.id}`)}
+                      >
+                        <Eye className='h-4 w-4' />
+                      </Button>
+                    </td>
+                  </tr>
+                )))}
             </tbody>
           </table>
         </div>

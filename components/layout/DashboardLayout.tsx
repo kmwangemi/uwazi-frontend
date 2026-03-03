@@ -1,14 +1,33 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
+import { useAuthStore } from '@/stores/authStore';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const router = useRouter();
+  const { token, hasHydrated } = useAuthStore();
+  useEffect(() => {
+    if (hasHydrated && !token) {
+      router.replace('/login');
+    }
+  }, [token, hasHydrated, router]);
+  if (!hasHydrated) {
+    return (
+      <div className='flex h-screen items-center justify-center bg-gray-50'>
+        <LoadingSpinner text='Loading...' />
+      </div>
+    );
+  }
+  // Don't render dashboard content until authenticated
+  if (!token) return null;
   return (
     <div className='flex h-screen overflow-hidden bg-gray-50'>
       <Sidebar />

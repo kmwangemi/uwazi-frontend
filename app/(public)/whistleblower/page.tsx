@@ -12,6 +12,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { useSubmitReport } from '@/hooks/queries/useWhistleblower';
 
 type FormState = { submitted: false } | { submitted: true; trackingId: string };
 
@@ -30,16 +32,15 @@ export default function WhistleblowerPage() {
 
   const reportType = watch('report_type');
 
+  const { mutateAsync: submitReport } = useSubmitReport();
+
   const onSubmit = async (data: WhistleblowerFormData) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Generate tracking ID
-      const trackingId = `TRACK-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-      setState({ submitted: true, trackingId });
+      const response = await submitReport(data);
+      setState({ submitted: true, trackingId: response.trackingId });
     } catch (error) {
       console.error('Error submitting report:', error);
+      toast.error('Failed to submit report. Please try again later.');
     }
   };
 

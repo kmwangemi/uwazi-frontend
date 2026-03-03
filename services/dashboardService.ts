@@ -5,7 +5,7 @@ import type { DashboardStats } from '@/types/common';
 export const dashboardService = {
   getDashboardStats: async (): Promise<DashboardStats> => {
     try {
-      const response = await api.get<DashboardStats>('/api/dashboard/stats');
+      const response = await api.get<DashboardStats>('/dashboard/stats');
       return response.data;
     } catch (error) {
       return mockDashboardStats;
@@ -14,7 +14,7 @@ export const dashboardService = {
 
   getRecentAlerts: async (limit: number = 10) => {
     try {
-      const response = await api.get('/api/dashboard/alerts', {
+      const response = await api.get('/dashboard/alerts', {
         params: { limit },
       });
       return response.data;
@@ -25,7 +25,7 @@ export const dashboardService = {
 
   getCountyData: async () => {
     try {
-      const response = await api.get('/api/dashboard/counties');
+      const response = await api.get('/dashboard/counties');
       return response.data;
     } catch (error) {
       return mockDashboardStats.savings_by_county;
@@ -34,7 +34,7 @@ export const dashboardService = {
 
   getFraudTrends: async () => {
     try {
-      const response = await api.get('/api/dashboard/fraud-trends');
+      const response = await api.get('/dashboard/fraud-trends');
       return response.data;
     } catch (error) {
       return mockDashboardStats.fraud_trends;

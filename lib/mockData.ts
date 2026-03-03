@@ -43,8 +43,8 @@ export const mockTenders: Tender[] = Array.from({ length: 50 }, (_, i) => ({
   award_date:
     i % 2 === 0
       ? new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0]
+        .toISOString()
+        .split('T')[0]
       : null,
   awarded_supplier_id: i % 2 === 0 ? Math.floor(Math.random() * 20) + 1 : null,
   awarded_supplier_name:
@@ -61,14 +61,14 @@ export const mockTenders: Tender[] = Array.from({ length: 50 }, (_, i) => ({
   corruption_flags:
     Math.random() > 0.6
       ? [
-          {
-            type: 'PRICE_INFLATION',
-            severity: Math.random() > 0.5 ? 'HIGH' : 'MEDIUM',
-            description: 'Price significantly above market rate',
-            score: Math.floor(Math.random() * 50),
-            evidence: { source: 'market analysis' },
-          },
-        ]
+        {
+          type: 'PRICE_INFLATION',
+          severity: Math.random() > 0.5 ? 'HIGH' : 'MEDIUM',
+          description: 'Price significantly above market rate',
+          score: Math.floor(Math.random() * 50),
+          evidence: { source: 'market analysis' },
+        },
+      ]
       : [],
   created_at: new Date(
     Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,
@@ -166,8 +166,8 @@ export const mockInvestigations: Investigation[] = Array.from(
     closed_date:
       i % 4 === 3
         ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0]
+          .toISOString()
+          .split('T')[0]
         : null,
     findings: i % 4 === 3 ? 'Investigation completed with findings' : null,
     estimated_loss: Math.floor(Math.random() * 100000000) + 1000000,
@@ -175,8 +175,8 @@ export const mockInvestigations: Investigation[] = Array.from(
     outcome:
       i % 4 === 3
         ? (['CONFIRMED_FRAUD', 'NO_FRAUD', 'INCONCLUSIVE'][
-            Math.floor(Math.random() * 3)
-          ] as any)
+          Math.floor(Math.random() * 3)
+        ] as any)
         : null,
   }),
 );
@@ -318,5 +318,84 @@ export const mockPublicReports: PublicReport[] = [
     anonymous: true,
     rejectionReason:
       'Insufficient evidence provided. Submitter requested to provide supporting documents.',
+  },
+];
+
+export const mockSupplierBids = [
+  {
+    id: 'BID001',
+    tenderId: 1,
+    tenderTitle: 'Road Construction - Nairobi-Nakuru Highway',
+    tenderReference: 'TND/2024/001',
+    bidAmount: 45000000,
+    status: 'Awarded',
+    submittedDate: '2024-02-10',
+    deadline: '2024-03-15',
+    totalScore: 87,
+    recommendation: 'Approved',
+    paymentTerms: 'Net 60',
+    deliveryTimeline: 120,
+    feedback: 'Strong technical proposal and competitive pricing',
+  },
+  {
+    id: 'BID002',
+    tenderId: 2,
+    tenderTitle: 'School Desks and Chairs Supply',
+    tenderReference: 'TND/2024/002',
+    bidAmount: 2500000,
+    status: 'Under Evaluation',
+    submittedDate: '2024-02-12',
+    deadline: '2024-03-20',
+    totalScore: null,
+    recommendation: null,
+    paymentTerms: 'Net 30',
+    deliveryTimeline: 45,
+    feedback: null,
+  },
+  {
+    id: 'BID003',
+    tenderId: 3,
+    tenderTitle: 'IT Equipment - Laptops & Servers',
+    tenderReference: 'TND/2024/003',
+    bidAmount: 8500000,
+    status: 'Shortlisted',
+    submittedDate: '2024-02-08',
+    deadline: '2024-03-18',
+    totalScore: null,
+    recommendation: null,
+    paymentTerms: 'Progressive',
+    deliveryTimeline: 60,
+    feedback: 'Awaiting final evaluation round',
+  },
+  {
+    id: 'BID004',
+    tenderId: 4,
+    tenderTitle: 'Medical Supplies - Hospital Equipment',
+    tenderReference: 'TND/2024/004',
+    bidAmount: 12000000,
+    status: 'Not Selected',
+    submittedDate: '2024-01-25',
+    deadline: '2024-02-28',
+    totalScore: 62,
+    recommendation: 'Rejected',
+    paymentTerms: 'Net 30',
+    deliveryTimeline: 90,
+    feedback:
+      'Price significantly above budget. Recommend cost reduction strategy.',
+  },
+  {
+    id: 'BID005',
+    tenderId: 5,
+    tenderTitle: 'Vehicle Maintenance Services',
+    tenderReference: 'TND/2024/005',
+    bidAmount: 5500000,
+    status: 'Submitted',
+    submittedDate: '2024-02-14',
+    deadline: '2024-03-10',
+    totalScore: null,
+    recommendation: null,
+    paymentTerms: 'Monthly',
+    deliveryTimeline: 365,
+    feedback: null,
   },
 ];

@@ -12,7 +12,7 @@ export const tendersService = {
     params: PaginationParams & FilterParams,
   ): Promise<ApiResponse<Tender[]>> => {
     try {
-      const response = await api.get<ApiResponse<Tender[]>>('/api/tenders', {
+      const response = await api.get<ApiResponse<Tender[]>>('/tenders', {
         params,
       });
       return response.data;
@@ -63,9 +63,18 @@ export const tendersService = {
     }
   },
 
+  createTender: async (data: any) => {
+    try {
+      const response = await api.post('/tenders', data);
+      return response.data;
+    } catch (error) {
+      return { success: true, message: 'Tender created' };
+    }
+  },
+
   getTenderById: async (id: number): Promise<Tender> => {
     try {
-      const response = await api.get<Tender>(`/api/tenders/${id}`);
+      const response = await api.get<Tender>(`/tenders/${id}`);
       return response.data;
     } catch (error) {
       const tender = mockTenders.find(t => t.id === id);
@@ -76,7 +85,7 @@ export const tendersService = {
 
   analyzeTender: async (id: number) => {
     try {
-      const response = await api.post(`/api/analyze/tender/${id}`);
+      const response = await api.post(`/analyze/tender/${id}`);
       return response.data;
     } catch (error) {
       // Return mock analysis
@@ -88,7 +97,7 @@ export const tendersService = {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await api.post('/api/tenders/upload', formData, {
+      const response = await api.post('/tenders/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return response.data;
@@ -99,7 +108,7 @@ export const tendersService = {
 
   exportTenders: async (params: FilterParams): Promise<Blob> => {
     try {
-      const response = await api.get('/api/tenders/export', {
+      const response = await api.get('/tenders/export', {
         params,
         responseType: 'blob',
       });
@@ -111,7 +120,7 @@ export const tendersService = {
 
   flagTender: async (id: number, reason: string) => {
     try {
-      const response = await api.post(`/api/tenders/${id}/flag`, { reason });
+      const response = await api.post(`/tenders/${id}/flag`, { reason });
       return response.data;
     } catch (error) {
       return { success: true, message: 'Tender flagged' };

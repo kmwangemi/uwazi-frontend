@@ -9,7 +9,7 @@ export const suppliersService = {
   ): Promise<ApiResponse<Supplier[]>> => {
     try {
       const response = await api.get<ApiResponse<Supplier[]>>(
-        '/api/suppliers',
+        '/suppliers',
         { params },
       );
       return response.data;
@@ -44,7 +44,7 @@ export const suppliersService = {
 
   getSupplierById: async (id: number): Promise<Supplier> => {
     try {
-      const response = await api.get<Supplier>(`/api/suppliers/${id}`);
+      const response = await api.get<Supplier>(`/suppliers/${id}`);
       return response.data;
     } catch (error) {
       const supplier = mockSuppliers.find(s => s.id === id);
@@ -55,7 +55,7 @@ export const suppliersService = {
 
   verifySupplier: async (id: number) => {
     try {
-      const response = await api.post(`/api/suppliers/${id}/verify`);
+      const response = await api.post(`/suppliers/${id}/verify`);
       return response.data;
     } catch (error) {
       return {
@@ -96,7 +96,7 @@ export const suppliersService = {
 
   flagSupplier: async (id: number, reason: string) => {
     try {
-      const response = await api.post(`/api/suppliers/${id}/flag`, { reason });
+      const response = await api.post(`/suppliers/${id}/flag`, { reason });
       return response.data;
     } catch (error) {
       return { success: true, message: 'Supplier flagged' };

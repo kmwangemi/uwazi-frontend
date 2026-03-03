@@ -7,9 +7,9 @@ import { useAuthStore } from '@/stores/authStore';
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
-  const userName =
-    `${capitalizeFirstLetter(user?.first_name ?? '')} ${capitalizeFirstLetter(user?.last_name ?? '')}`.trim() ||
-    'Unknown User';
+
+  const userName = user?.full_name ?? 'Unknown User';
+  const primaryRole = user?.roles?.[0] ?? '';
 
   return (
     <div className='space-y-8'>
@@ -43,7 +43,7 @@ export default function SettingsPage() {
                 Role
               </label>
               <p className='mt-1 text-gray-900'>
-                {capitalizeFirstLetter(user?.role ?? '')}
+                {capitalizeFirstLetter(primaryRole)}
               </p>
             </div>
           </div>

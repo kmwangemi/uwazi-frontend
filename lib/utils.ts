@@ -119,3 +119,14 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
 export const stringToBool = (str: string): boolean => {
   return str.toLowerCase() === 'true';
 };
+
+/**
+ * Get initial letters from name
+ */
+export const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(n => n.charAt(0).toUpperCase())
+    .join('')
+    .substring(0, 2);
+};

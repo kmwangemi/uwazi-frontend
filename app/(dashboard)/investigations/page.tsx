@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockInvestigations, mockPublicReports } from '@/lib/mockData';
+import { mockPublicReports } from '@/lib/mockData';
 import {
   AlertCircle,
   AlertTriangle,
@@ -24,8 +24,9 @@ import {
   Search,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useInvestigations, useCreateInvestigation } from '@/hooks/queries/useInvestigations';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -39,37 +40,18 @@ export default function InvestigationsPage() {
   const [newInvestigationDialogOpen, setNewInvestigationDialogOpen] =
     useState(false);
 
-  const filteredInvestigations = useMemo(() => {
-    let result = [...mockInvestigations];
+  const { data: investigationsData, isLoading } = useInvestigations({
+    page: currentPage,
+    limit: itemsPerPage,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    priority: priorityFilter === 'all' ? undefined : priorityFilter,
+    search: searchQuery || undefined,
+  });
 
-    if (statusFilter !== 'all') {
-      result = result.filter(i => i.status === statusFilter);
-    }
+  const { mutate: createInvestigation } = useCreateInvestigation();
 
-    if (priorityFilter !== 'all') {
-      result = result.filter(i => i.priority === priorityFilter);
-    }
-
-    if (searchQuery) {
-      result = result.filter(
-        i =>
-          i.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.case_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.description.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-
-    return result.sort(
-      (a, b) =>
-        new Date(b.opened_date).getTime() - new Date(a.opened_date).getTime(),
-    );
-  }, [statusFilter, priorityFilter, searchQuery]);
-
-  const totalPages = Math.ceil(filteredInvestigations.length / itemsPerPage);
-  const paginatedInvestigations = filteredInvestigations.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const filteredInvestigations = investigationsData?.data || [];
+  const totalPages = Math.ceil((investigationsData?.meta?.total || 0) / itemsPerPage);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -101,8 +83,15 @@ export default function InvestigationsPage() {
   };
 
   const handleNewInvestigation = (investigationData: any) => {
-    toast.success('Investigation case will be created soon');
-    setNewInvestigationDialogOpen(false);
+    createInvestigation(investigationData, {
+      onSuccess: () => {
+        toast.success('Investigation case created successfully');
+        setNewInvestigationDialogOpen(false);
+      },
+      onError: () => {
+        toast.error('Failed to create investigation case');
+      }
+    });
   };
 
   const pendingPublicReports = mockPublicReports.filter(
@@ -223,52 +212,61 @@ export default function InvestigationsPage() {
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          {paginatedInvestigations.map(investigation => (
-            <div
-              key={investigation.id}
-              className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow'
-            >
-              <div className='space-y-3'>
-                <div className='flex items-start justify-between gap-2'>
-                  <div className='flex-1'>
-                    <div className='flex items-center gap-2'>
-                      {getStatusIcon(investigation.status)}
-                      <h3 className='font-semibold text-gray-900 line-clamp-2'>
-                        {investigation.title}
-                      </h3>
+          {isLoading ? (
+            <div className='col-span-1 md:col-span-2 py-8 text-center text-gray-500'>
+              Loading investigations...
+            </div>
+          ) : filteredInvestigations.length === 0 ? (
+            <div className='col-span-1 md:col-span-2 py-8 text-center text-gray-500'>
+              No investigations found matching your criteria.
+            </div>
+          ) : (
+            filteredInvestigations.map(investigation => (
+              <div
+                key={investigation.id}
+                className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow'
+              >
+                <div className='space-y-3'>
+                  <div className='flex items-start justify-between gap-2'>
+                    <div className='flex-1'>
+                      <div className='flex items-center gap-2'>
+                        {getStatusIcon(investigation.status)}
+                        <h3 className='font-semibold text-gray-900 line-clamp-2'>
+                          {investigation.title}
+                        </h3>
+                      </div>
+                      <p className='text-sm text-gray-600 mt-1'>
+                        {investigation.case_number}
+                      </p>
                     </div>
-                    <p className='text-sm text-gray-600 mt-1'>
-                      {investigation.case_number}
-                    </p>
-                  </div>
-                  <Badge className={getPriorityColor(investigation.priority)}>
-                    {investigation.priority}
-                  </Badge>
-                </div>
-
-                <p className='text-sm text-gray-600 line-clamp-2'>
-                  {investigation.description}
-                </p>
-
-                <div className='flex items-center justify-between pt-3 border-t border-gray-100'>
-                  <div className='flex gap-2'>
-                    <Badge className={getStatusColor(investigation.status)}>
-                      {investigation.status}
+                    <Badge className={getPriorityColor(investigation.priority)}>
+                      {investigation.priority}
                     </Badge>
                   </div>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() =>
-                      router.push(`/investigations/${investigation.id}`)
-                    }
-                  >
-                    <Eye className='h-4 w-4' />
-                  </Button>
+
+                  <p className='text-sm text-gray-600 line-clamp-2'>
+                    {investigation.description}
+                  </p>
+
+                  <div className='flex items-center justify-between pt-3 border-t border-gray-100'>
+                    <div className='flex gap-2'>
+                      <Badge className={getStatusColor(investigation.status)}>
+                        {investigation.status}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() =>
+                        router.push(`/investigations/${investigation.id}`)
+                      }
+                    >
+                      <Eye className='h-4 w-4' />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )))}
         </div>
 
         <Pagination

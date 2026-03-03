@@ -13,11 +13,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/formatters';
-import { mockTenders } from '@/lib/mockData';
 import { ArrowRight, Bookmark, FileText, MapPin, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAvailableTenders } from '@/hooks/queries/useSupplierTenders';
+import { mockTenders } from '@/lib/mockData';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -34,48 +35,34 @@ export default function AvailableTendersPage() {
   const categories = [...new Set(mockTenders.map(t => t.category))];
   const counties = [...new Set(mockTenders.map(t => t.county))].sort();
 
-  const openTenders = useMemo(() => {
-    return mockTenders.filter(t => t.status === 'PUBLISHED');
-  }, []);
+  const { data: tendersData, isLoading } = useAvailableTenders({
+    page: currentPage,
+    limit: itemsPerPage,
+    category: categoryFilter === 'all' ? undefined : categoryFilter,
+    county: countyFilter === 'all' ? undefined : countyFilter,
+    search: searchQuery || undefined,
+    // Add sorting mapping if API supports it, for now we will sort manually if the API doesn't
+  });
 
-  const filteredTenders = useMemo(() => {
-    let result = [...openTenders];
-    if (searchQuery) {
-      result = result.filter(
-        t =>
-          t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.tender_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.procuring_entity.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-    if (categoryFilter !== 'all') {
-      result = result.filter(t => t.category === categoryFilter);
-    }
-    if (countyFilter !== 'all') {
-      result = result.filter(t => t.county === countyFilter);
-    }
+  const fetchedTenders = tendersData?.data || [];
+  const totalPages = Math.ceil((tendersData?.meta?.total || 0) / itemsPerPage);
+
+  const paginatedTenders = [...fetchedTenders].sort((a, b) => {
     if (sortBy === 'deadline') {
-      result = result.sort(
-        (a, b) =>
-          new Date(a.submission_deadline || '').getTime() -
-          new Date(b.submission_deadline || '').getTime(),
+      return (
+        new Date(a.submission_deadline || '').getTime() -
+        new Date(b.submission_deadline || '').getTime()
       );
     } else if (sortBy === 'amount') {
-      result = result.sort((a, b) => b.amount - a.amount);
+      return b.amount - a.amount;
     } else if (sortBy === 'recent') {
-      result = result.sort(
-        (a, b) =>
-          new Date(b.created_at || '').getTime() -
-          new Date(a.created_at || '').getTime(),
+      return (
+        new Date(b.created_at || '').getTime() -
+        new Date(a.created_at || '').getTime()
       );
     }
-    return result;
-  }, [openTenders, searchQuery, categoryFilter, countyFilter, sortBy]);
-  const totalPages = Math.ceil(filteredTenders.length / itemsPerPage);
-  const paginatedTenders = filteredTenders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+    return 0;
+  });
   const toggleBookmark = (tenderId: number) => {
     setBookmarkedTenders(prev =>
       prev.includes(tenderId)
@@ -200,112 +187,117 @@ export default function AvailableTendersPage() {
             <div className='mb-6 flex items-center justify-between'>
               <p className='text-sm font-medium text-gray-700'>
                 <span className='text-primary font-semibold'>
-                  {filteredTenders.length}
+                  {tendersData?.meta?.total || 0}
                 </span>{' '}
-                tender{filteredTenders.length !== 1 ? 's' : ''} found
+                tender{tendersData?.meta?.total !== 1 ? 's' : ''} found
               </p>
             </div>
             {/* Tender Cards Grid */}
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-              {paginatedTenders.map(tender => {
-                const daysLeft = daysUntilDeadline(
-                  tender.submission_deadline || '',
-                );
-                const isBookmarked = bookmarkedTenders.includes(tender.id);
-                return (
-                  <Card
-                    key={tender.id}
-                    className='p-4 hover:shadow-lg hover:border-primary/50 transition-all duration-200 cursor-pointer flex flex-col'
-                    onClick={() => router.push(`/tenders/${tender.id}`)}
-                  >
-                    {/* Header */}
-                    <div className='flex justify-between items-start mb-3'>
-                      <div className='flex-1'>
-                        <div className='flex items-center gap-2 mb-2'>
-                          <Badge variant='secondary' className='text-xs'>
-                            {tender.category}
-                          </Badge>
-                          {daysLeft <= 3 && (
-                            <Badge className='bg-red-100 text-red-800 text-xs'>
-                              Urgent
+              {isLoading ? (
+                <div className="col-span-full text-center py-12 text-gray-500">
+                  Loading available tenders...
+                </div>
+              ) : (
+                paginatedTenders.map(tender => {
+                  const daysLeft = daysUntilDeadline(
+                    tender.submission_deadline || '',
+                  );
+                  const isBookmarked = bookmarkedTenders.includes(tender.id);
+                  return (
+                    <Card
+                      key={tender.id}
+                      className='p-4 hover:shadow-lg hover:border-primary/50 transition-all duration-200 cursor-pointer flex flex-col'
+                      onClick={() => router.push(`/tenders/${tender.id}`)}
+                    >
+                      {/* Header */}
+                      <div className='flex justify-between items-start mb-3'>
+                        <div className='flex-1'>
+                          <div className='flex items-center gap-2 mb-2'>
+                            <Badge variant='secondary' className='text-xs'>
+                              {tender.category}
                             </Badge>
-                          )}
-                          {daysLeft <= 7 && daysLeft > 3 && (
-                            <Badge className='bg-yellow-100 text-yellow-800 text-xs'>
-                              Soon
-                            </Badge>
-                          )}
+                            {daysLeft <= 3 && (
+                              <Badge className='bg-red-100 text-red-800 text-xs'>
+                                Urgent
+                              </Badge>
+                            )}
+                            {daysLeft <= 7 && daysLeft > 3 && (
+                              <Badge className='bg-yellow-100 text-yellow-800 text-xs'>
+                                Soon
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            toggleBookmark(tender.id);
+                            toast.success(
+                              bookmarkedTenders.includes(tender.id)
+                                ? 'Removed from saved'
+                                : 'Saved to your list',
+                            );
+                          }}
+                          className='text-gray-300 hover:text-primary transition-colors shrink-0'
+                        >
+                          <Bookmark
+                            className={`h-5 w-5 ${isBookmarked ? 'fill-primary text-primary' : ''}`}
+                          />
+                        </button>
+                      </div>
+                      {/* Title */}
+                      <h3 className='text-base font-semibold text-gray-900 mb-2 line-clamp-2 grow'>
+                        {tender.title}
+                      </h3>
+                      {/* Entity & Location */}
+                      <div className='mb-3 space-y-1'>
+                        <p className='text-xs text-gray-600'>
+                          <span className='font-medium'>
+                            {tender.procuring_entity}
+                          </span>
+                        </p>
+                        <div className='flex items-center gap-1 text-xs text-gray-600'>
+                          <MapPin className='h-3 w-3' />
+                          <span>{tender.county}</span>
                         </div>
                       </div>
-                      <button
+                      {/* Divider */}
+                      <div className='h-px bg-gray-100 my-3' />
+                      {/* Amount & Deadline */}
+                      <div className='grid grid-cols-2 gap-3 mb-3'>
+                        <div>
+                          <p className='text-xs text-gray-600 mb-1'>Budget</p>
+                          <p className='text-sm font-bold text-primary'>
+                            {formatCurrency(tender.amount)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className='text-xs text-gray-600 mb-1'>Deadline</p>
+                          <div
+                            className={`text-xs font-semibold px-2 py-1 rounded-full inline-block ${getDeadlineColor(tender.submission_deadline || '')}`}
+                          >
+                            {daysLeft} days
+                          </div>
+                        </div>
+                      </div>
+                      {/* Action Button */}
+                      <Button
+                        size='sm'
+                        className='w-full'
                         onClick={e => {
                           e.stopPropagation();
-                          toggleBookmark(tender.id);
-                          toast.success(
-                            bookmarkedTenders.includes(tender.id)
-                              ? 'Removed from saved'
-                              : 'Saved to your list',
-                          );
+                          router.push(`/tenders/${tender.id}/bid/new`);
                         }}
-                        className='text-gray-300 hover:text-primary transition-colors shrink-0'
                       >
-                        <Bookmark
-                          className={`h-5 w-5 ${isBookmarked ? 'fill-primary text-primary' : ''}`}
-                        />
-                      </button>
-                    </div>
-                    {/* Title */}
-                    <h3 className='text-base font-semibold text-gray-900 mb-2 line-clamp-2 grow'>
-                      {tender.title}
-                    </h3>
-                    {/* Entity & Location */}
-                    <div className='mb-3 space-y-1'>
-                      <p className='text-xs text-gray-600'>
-                        <span className='font-medium'>
-                          {tender.procuring_entity}
-                        </span>
-                      </p>
-                      <div className='flex items-center gap-1 text-xs text-gray-600'>
-                        <MapPin className='h-3 w-3' />
-                        <span>{tender.county}</span>
-                      </div>
-                    </div>
-                    {/* Divider */}
-                    <div className='h-px bg-gray-100 my-3' />
-                    {/* Amount & Deadline */}
-                    <div className='grid grid-cols-2 gap-3 mb-3'>
-                      <div>
-                        <p className='text-xs text-gray-600 mb-1'>Budget</p>
-                        <p className='text-sm font-bold text-primary'>
-                          {formatCurrency(tender.amount)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className='text-xs text-gray-600 mb-1'>Deadline</p>
-                        <div
-                          className={`text-xs font-semibold px-2 py-1 rounded-full inline-block ${getDeadlineColor(tender.submission_deadline || '')}`}
-                        >
-                          {daysLeft} days
-                        </div>
-                      </div>
-                    </div>
-                    {/* Action Button */}
-                    <Button
-                      size='sm'
-                      className='w-full'
-                      onClick={e => {
-                        e.stopPropagation();
-                        router.push(`/tenders/${tender.id}/bid/new`);
-                      }}
-                    >
-                      <ArrowRight className='h-4 w-4 mr-2' />
-                      Submit Bid
-                    </Button>
-                  </Card>
-                );
-              })}
+                        <ArrowRight className='h-4 w-4 mr-2' />
+                        Submit Bid
+                      </Button>
+                    </Card>
+                  );
+                }))}
             </div>
-            {filteredTenders.length === 0 && (
+            {!isLoading && fetchedTenders.length === 0 && (
               <Card className='col-span-full p-12 text-center bg-gray-50 border-dashed'>
                 <FileText className='h-12 w-12 text-gray-300 mx-auto mb-3' />
                 <p className='text-gray-700 font-medium mb-1'>

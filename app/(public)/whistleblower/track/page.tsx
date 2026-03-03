@@ -1,24 +1,23 @@
 'use client'
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { mockPublicReports } from '@/lib/mockData'
-import { Search, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react'
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Search, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { useTrackReport } from '@/hooks/queries/useWhistleblower';
 
 export default function TrackingPage() {
-  const [trackingId, setTrackingId] = useState('')
-  const [foundReport, setFoundReport] = useState<typeof mockPublicReports[0] | null>(null)
-  const [searched, setSearched] = useState(false)
+  const [trackingInput, setTrackingInput] = useState('');
+  const [searchId, setSearchId] = useState('');
+
+  const { data: foundReport, isError, isLoading, isFetched } = useTrackReport(searchId);
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    const report = mockPublicReports.find((r) => r.trackingId === trackingId.toUpperCase())
-    setFoundReport(report || null)
-    setSearched(true)
-  }
+    e.preventDefault();
+    setSearchId(trackingInput.trim());
+  };
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -78,8 +77,8 @@ export default function TrackingPage() {
               <div className="flex gap-2">
                 <Input
                   placeholder="TRACK-XXXXXXXXXXXX"
-                  value={trackingId}
-                  onChange={(e) => setTrackingId(e.target.value)}
+                  value={trackingInput}
+                  onChange={(e) => setTrackingInput(e.target.value)}
                   className="flex-1"
                 />
                 <Button type="submit" size="lg">
@@ -93,12 +92,18 @@ export default function TrackingPage() {
             </div>
           </form>
 
-          {searched && !foundReport && (
+          {isFetched && isError && (
             <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4">
               <p className="text-red-900 font-semibold">Report Not Found</p>
               <p className="text-sm text-red-800 mt-1">
-                No report found with the tracking ID "{trackingId}". Please check that you've entered the correct ID.
+                No report found with the tracking ID "{searchId}". Please check that you've entered the correct ID.
               </p>
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="mt-6 text-center text-gray-500 py-4">
+              Searching for report "{searchId}"...
             </div>
           )}
 
@@ -120,11 +125,10 @@ export default function TrackingPage() {
                   {getProgressSteps(foundReport.status).map((step, index) => (
                     <div key={index} className="flex items-center gap-3">
                       <div
-                        className={`h-8 w-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                          step.completed
+                        className={`h-8 w-8 rounded-full flex items-center justify-center font-semibold text-sm ${step.completed
                             ? 'bg-green-600 text-white'
                             : 'bg-gray-300 text-gray-600'
-                        }`}
+                          }`}
                       >
                         {step.completed ? '✓' : index + 1}
                       </div>
