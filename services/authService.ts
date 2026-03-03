@@ -1,37 +1,7 @@
 import api from '@/lib/api';
-import type { LoginResponse, User } from '@/types/user';
+import type { User } from '@/types/user';
 
 export const authService = {
-  login: async (email: string, password: string): Promise<LoginResponse> => {
-    try {
-      const response = await api.post<LoginResponse>('/auth/login', {
-        email,
-        password,
-      });
-      return response.data;
-    } catch (error) {
-      // Mock login for development
-      if (email && password) {
-        return {
-          access_token: 'mock-token-' + Date.now(),
-          token_type: 'bearer',
-          user: {
-            id: '1',
-            email,
-            first_name: 'john',
-            last_name: 'doe',
-            phone_number: '123-456-7890',
-            profile_picture_url: null,
-            role: 'investigator',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        };
-      }
-      throw error;
-    }
-  },
-
   logout: async (): Promise<void> => {
     try {
       await api.post('/auth/logout');

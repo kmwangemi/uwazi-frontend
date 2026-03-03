@@ -1,6 +1,5 @@
 'use client';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,69 +8,91 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { capitalizeFirstLetter, firstLetter } from '@/lib/utils';
+import { useLogout } from '@/hooks/queries/useLogout';
+import { getInitials } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
-import { LogOut, Menu, Settings } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { LogOut, Menu, Settings, User } from 'lucide-react';
+import Link from 'next/link';
 
 export function Header() {
-  const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const { toggleSidebar } = useUIStore();
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-  const initials = `${firstLetter(user?.first_name ?? '')}${firstLetter(user?.last_name ?? '')}`;
-  const userName =
-    `${capitalizeFirstLetter(user?.first_name ?? '')} ${capitalizeFirstLetter(user?.last_name ?? '')}`.trim() ||
-    'Unknown User';
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
+  // API returns full_name — use directly
+  const fullName = user?.full_name ?? '';
+  // API returns roles[] array — show first role
+  const primaryRole = user?.roles?.[0] ?? '';
   return (
-    <header className='flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 py-4'>
-      <div className='flex items-center gap-4'>
-        <Button
-          variant='ghost'
-          size='icon'
-          onClick={toggleSidebar}
-          className='lg:hidden'
-        >
-          <Menu className='h-5 w-5' />
-        </Button>
-        <h1 className='text-xl font-bold text-gray-900'>Procurement Monitor</h1>
-      </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant='ghost' className='h-10 gap-2 px-2'>
-            <Avatar className='h-8 w-8'>
-              <AvatarFallback className='bg-primary text-white text-sm font-semibold'>
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <span className='hidden sm:inline text-sm text-gray-700'>
-              {user?.email}
-            </span>
+    <header className='sticky top-0 z-30 border-b border-gray-200 bg-white'>
+      <div className='flex h-16 items-center justify-between px-4 lg:px-6'>
+        {/* Left — sidebar toggle + logo */}
+        <div className='flex items-center gap-4'>
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={toggleSidebar}
+            className='lg:hidden'
+          >
+            <Menu className='h-5 w-5' />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-56'>
-          <div className='px-2 py-1.5'>
-            <p className='text-sm font-medium text-gray-900'>{userName}</p>
-            <p className='text-xs text-gray-600'>
-              {capitalizeFirstLetter(user?.role ?? '')}
-            </p>
-          </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push('/settings')}>
-            <Settings className='mr-2 h-4 w-4' />
-            Settings
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout} className='text-red-600'>
-            <LogOut className='mr-2 h-4 w-4' />
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <h1 className='text-xl font-bold text-gray-900'>
+            Procurement Monitor
+          </h1>
+        </div>
+        {/* Right — user dropdown */}
+        <div className='flex items-center gap-4'>
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant='ghost' size='sm' className='flex gap-2'>
+                  <div className='h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs'>
+                    {getInitials(fullName)}
+                  </div>
+                  <div className='hidden sm:block text-left'>
+                    <p className='text-sm font-medium text-gray-900'>
+                      {fullName}
+                    </p>
+                    <p className='text-xs text-gray-500 capitalize'>
+                      {primaryRole}
+                    </p>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end' className='w-56'>
+                <div className='px-2 py-1.5'>
+                  <p className='text-sm font-medium text-gray-900'>
+                    {fullName}
+                  </p>
+                  <p className='text-xs text-gray-500'>{user.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <Link href='/profile'>
+                  <DropdownMenuItem>
+                    <User className='mr-2 h-4 w-4' />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                </Link>
+                <Link href='/settings'>
+                  <DropdownMenuItem>
+                    <Settings className='mr-2 h-4 w-4' />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => logout()}
+                  disabled={isLoggingOut}
+                  className='text-red-600'
+                >
+                  <LogOut className='mr-2 h-4 w-4' />
+                  <span>{isLoggingOut ? 'Signing out...' : 'Logout'}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
     </header>
   );
 }

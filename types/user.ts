@@ -1,28 +1,42 @@
-export interface User {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone_number: string;
-  role: UserRole;
-  profile_picture_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export type UserRole =
   | 'admin'
   | 'investigator'
   | 'supplier'
   | 'procurement_officer';
 
+export type UserStatus = 'active' | 'inactive' | 'suspended';
+
+export interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  roles: UserRole[];
+  is_superuser: boolean;
+  must_change_password: boolean;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
 }
 
-export interface LoginResponse {
+export interface LoginTokens {
   access_token: string;
+  refresh_token: string;
   token_type: string;
+  expires_in: number;
+}
+
+export interface LoginResponse {
+  tokens: LoginTokens;
   user: User;
+}
+
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  refreshToken: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
 }
