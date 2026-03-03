@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { KENYA_COUNTIES, PROCUREMENT_CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import type { TenderCreatePayload } from '@/types/tender';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, Upload, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -170,6 +171,7 @@ function FileAttachmentSection({
   onChange: (files: AttachedFile[]) => void;
 }) {
   const [dragging, setDragging] = useState(false);
+
   const addFiles = useCallback(
     (incoming: FileList | null) => {
       if (!incoming) return;
@@ -203,10 +205,8 @@ function FileAttachmentSection({
   );
 
   const removeFile = (id: string) => onChange(files.filter(f => f.id !== id));
-
   const updateLabel = (id: string, label: string) =>
     onChange(files.map(f => (f.id === id ? { ...f, label } : f)));
-
   const formatSize = (bytes: number) =>
     bytes < 1024 * 1024
       ? `${(bytes / 1024).toFixed(0)} KB`
@@ -313,15 +313,15 @@ function FileAttachmentSection({
 interface NewTenderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit?: (
-    tender: TenderFormValues & { attachments: AttachedFile[] },
-  ) => void;
+  onSubmit?: (payload: TenderCreatePayload) => void; // ✅ matches service type
+  isSubmitting?: boolean; // ✅ controlled by parent
 }
 
 export function NewTenderDialog({
   open,
   onOpenChange,
   onSubmit,
+  isSubmitting = false,
 }: NewTenderDialogProps) {
   const [attachments, setAttachments] = useState<AttachedFile[]>([]);
 
@@ -347,26 +347,47 @@ export function NewTenderDialog({
     },
   });
 
-  const onValidSubmit = async (data: TenderFormValues) => {
-    try {
-      onSubmit?.({ ...data, attachments });
-      toast.success('Tender created successfully');
-      form.reset();
-      setAttachments([]);
-      onOpenChange(false);
-    } catch {
-      toast.error('Failed to create tender');
-    }
+  const onValidSubmit = (data: TenderFormValues) => {
+    // Build TenderCreatePayload — shape matches backend TenderCreate schema
+    const payload: TenderCreatePayload = {
+      tender_number: data.tender_number,
+      title: data.title,
+      description: data.description,
+      entityName: data.entityName,
+      entityType: data.entityType,
+      category: data.category,
+      procurementMethod: data.procurementMethod,
+      sourceOfFunds: data.sourceOfFunds,
+      amount: parseFloat(data.amount), // ✅ convert string → number
+      county: data.county,
+      deadline: data.deadline,
+      openingDate: data.openingDate,
+      tenderSecurityForm: data.tenderSecurityForm || undefined,
+      tenderSecurityAmount: data.tenderSecurityAmount
+        ? parseFloat(data.tenderSecurityAmount)
+        : undefined,
+      contactEmail: data.contactEmail || undefined,
+      attachments: attachments.map(a => a.file), // ✅ extract File[] for FormData
+    };
+    onSubmit?.(payload);
+    // ✅ Don't toast here — parent (TendersPage) handles success/error toasts
   };
 
   const handleClose = () => {
+    if (isSubmitting) return; // ✅ prevent close while uploading
     form.reset();
     setAttachments([]);
     onOpenChange(false);
   };
 
+  // Reset form when dialog closes after successful submit
+  const handleOpenChange = (open: boolean) => {
+    if (!open) handleClose();
+    else onOpenChange(true);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
           <DialogTitle>Create New Tender</DialogTitle>
@@ -499,7 +520,7 @@ export function NewTenderDialog({
                     <FormLabel>Description / Scope of Works</FormLabel>
                     <FormControl>
                       <textarea
-                        placeholder='Describe the goods, works or services required, including quantities and specifications'
+                        placeholder='Describe the goods, works or services required'
                         rows={3}
                         {...field}
                         className='w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none'
@@ -777,12 +798,12 @@ export function NewTenderDialog({
                 type='button'
                 variant='outline'
                 onClick={handleClose}
-                disabled={form.formState.isSubmitting}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type='submit' disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Creating...' : 'Create Tender'}
+              <Button type='submit' disabled={isSubmitting}>
+                {isSubmitting ? 'Creating...' : 'Create Tender'}
               </Button>
             </div>
           </form>

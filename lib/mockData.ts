@@ -3,10 +3,10 @@ import type { procuring_entity } from '@/types/entity';
 import type { Investigation } from '@/types/investigation';
 import type { PublicReport } from '@/types/report';
 import type { Supplier } from '@/types/supplier';
-import type { Tender } from '@/types/tender';
+import type { TenderOriginal } from '@/types/tender';
 import { KENYA_COUNTIES } from './constants';
 
-export const mockTenders: Tender[] = Array.from({ length: 50 }, (_, i) => ({
+export const mockTenders: TenderOriginal[] = Array.from({ length: 50 }, (_, i) => ({
   id: i + 1,
   tender_number: `TND/2024/${String(i + 1).padStart(3, '0')}`,
   title: [
@@ -43,8 +43,8 @@ export const mockTenders: Tender[] = Array.from({ length: 50 }, (_, i) => ({
   award_date:
     i % 2 === 0
       ? new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0]
+          .toISOString()
+          .split('T')[0]
       : null,
   awarded_supplier_id: i % 2 === 0 ? Math.floor(Math.random() * 20) + 1 : null,
   awarded_supplier_name:
@@ -61,14 +61,14 @@ export const mockTenders: Tender[] = Array.from({ length: 50 }, (_, i) => ({
   corruption_flags:
     Math.random() > 0.6
       ? [
-        {
-          type: 'PRICE_INFLATION',
-          severity: Math.random() > 0.5 ? 'HIGH' : 'MEDIUM',
-          description: 'Price significantly above market rate',
-          score: Math.floor(Math.random() * 50),
-          evidence: { source: 'market analysis' },
-        },
-      ]
+          {
+            type: 'PRICE_INFLATION',
+            severity: Math.random() > 0.5 ? 'HIGH' : 'MEDIUM',
+            description: 'Price significantly above market rate',
+            score: Math.floor(Math.random() * 50),
+            evidence: { source: 'market analysis' },
+          },
+        ]
       : [],
   created_at: new Date(
     Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,

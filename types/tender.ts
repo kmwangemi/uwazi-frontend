@@ -1,4 +1,4 @@
-export interface Tender {
+export interface TenderOriginal {
   id: number;
   tender_number: string;
   title: string;
@@ -18,6 +18,65 @@ export interface Tender {
   corruption_flags: CorruptionFlag[];
   created_at: string;
   updated_at: string;
+}
+
+export interface Tender {
+  id: string; // UUID not number
+  tender_number: string;
+  title: string;
+  description?: string;
+  entity_name: string; // was procuring_entity
+  entity_type?: string;
+  category?: string;
+  procurement_method?: string;
+  amount: number;
+  currency: string;
+  source_of_funds?: string;
+  tender_security_form?: string;
+  tender_security_amount?: number;
+  county?: string;
+  contact_email?: string;
+  publication_date?: string;
+  deadline?: string; // was submission_deadline
+  opening_date?: string;
+  award_date?: string;
+  awarded_supplier_id?: string;
+  status: TenderStatus;
+  risk_score: number;
+  risk_level?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  is_flagged: boolean;
+  attachments?: TenderAttachment[];
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TenderAttachment {
+  url: string;
+  public_id: string;
+  file_name: string;
+  file_type?: string;
+  size?: number;
+}
+
+export interface TenderCreatePayload {
+  tender_number: string;
+  title: string;
+  description?: string;
+  entityName: string;
+  entityType?: string;
+  category?: string;
+  procurementMethod?: string;
+  amount: number;
+  currency?: string;
+  sourceOfFunds?: string;
+  tenderSecurityForm?: string;
+  tenderSecurityAmount?: number;
+  county?: string;
+  contactEmail?: string;
+  deadline?: string;
+  openingDate?: string;
+  attachments?: File[];
 }
 
 export type TenderStatus =

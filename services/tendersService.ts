@@ -1,129 +1,76 @@
 import api from '@/lib/api';
-import { mockTenders } from '@/lib/mockData';
 import type {
   ApiResponse,
   FilterParams,
   PaginationParams,
 } from '@/types/common';
-import type { Tender } from '@/types/tender';
+import type { TenderOriginal, Tender, TenderCreatePayload } from '@/types/tender';
 
 export const tendersService = {
   getTenders: async (
     params: PaginationParams & FilterParams,
   ): Promise<ApiResponse<Tender[]>> => {
-    try {
-      const response = await api.get<ApiResponse<Tender[]>>('/tenders', {
-        params,
-      });
-      return response.data;
-    } catch (error) {
-      // Return mock data for development
-      const {
-        page = 1,
-        limit = 25,
-        search,
-        county,
-        category,
-        risk_level,
-      } = params;
-      let filtered = [...mockTenders];
-
-      if (search) {
-        filtered = filtered.filter(
-          t =>
-            t.tender_number.toLowerCase().includes(search.toLowerCase()) ||
-            t.title.toLowerCase().includes(search.toLowerCase()),
-        );
-      }
-      if (county) {
-        filtered = filtered.filter(t => t.county === county);
-      }
-      if (category) {
-        filtered = filtered.filter(t => t.category === category);
-      }
-      if (risk_level) {
-        const [min, max] = risk_level.split('-').map(Number);
-        filtered = filtered.filter(
-          t => t.risk_score >= min && t.risk_score <= max,
-        );
-      }
-
-      const start = (page - 1) * limit;
-      const end = start + limit;
-      const items = filtered.slice(start, end);
-
-      return {
-        data: items,
-        meta: {
-          total: filtered.length,
-          page,
-          limit,
-        },
-      };
-    }
+    const response = await api.get<TenderOriginal[]>('/tenders', { params });
+    // Backend returns a plain array — wrap it in ApiResponse shape
+    const data = response.data as unknown as Tender[];
+    return {
+      data,
+      meta: {
+        total: data.length,
+        page: params.page ?? 1,
+        limit: params.limit ?? 50,
+      },
+    };
   },
 
-  createTender: async (data: any) => {
-    try {
-      const response = await api.post('/tenders', data);
-      return response.data;
-    } catch (error) {
-      return { success: true, message: 'Tender created' };
+  createTender: async (
+    payload: TenderCreatePayload,
+  ): Promise<TenderOriginal> => {
+    const { attachments, ...fields } = payload;
+
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(fields));
+
+    if (attachments?.length) {
+      attachments.forEach(file => formData.append('attachments', file));
     }
+
+    const response = await api.post<TenderOriginal>('/tenders', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
   },
 
-  getTenderById: async (id: number): Promise<Tender> => {
-    try {
-      const response = await api.get<Tender>(`/tenders/${id}`);
-      return response.data;
-    } catch (error) {
-      const tender = mockTenders.find(t => t.id === id);
-      if (!tender) throw new Error('Tender not found');
-      return tender;
-    }
+  getTenderById: async (id: string): Promise<Tender> => {
+    // UUID string not number
+    const response = await api.get<Tender>(`/tenders/${id}`);
+    return response.data;
   },
 
-  analyzeTender: async (id: number) => {
-    try {
-      const response = await api.post(`/analyze/tender/${id}`);
-      return response.data;
-    } catch (error) {
-      // Return mock analysis
-      return { success: true, message: 'Analysis completed' };
-    }
+  analyzeTender: async (id: string) => {
+    const response = await api.post(`/analyze/tender/${id}`);
+    return response.data;
   },
 
   uploadTenders: async (file: File) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await api.post('/tenders/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/tenders/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
   },
 
   exportTenders: async (params: FilterParams): Promise<Blob> => {
-    try {
-      const response = await api.get('/tenders/export', {
-        params,
-        responseType: 'blob',
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get('/tenders/export', {
+      params,
+      responseType: 'blob',
+    });
+    return response.data;
   },
 
-  flagTender: async (id: number, reason: string) => {
-    try {
-      const response = await api.post(`/tenders/${id}/flag`, { reason });
-      return response.data;
-    } catch (error) {
-      return { success: true, message: 'Tender flagged' };
-    }
+  flagTender: async (id: string, reason: string) => {
+    const response = await api.post(`/tenders/${id}/flag`, { reason });
+    return response.data;
   },
 };

@@ -5,12 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { formatCurrency, getStatusBadgeColor } from '@/lib/formatters';
-import type { Tender } from '@/types/tender';
+import type { TenderOriginal } from '@/types/tender';
 import { AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface TenderCardProps {
-  tender: Tender;
+  tender: TenderOriginal;
 }
 
 export function TenderCard({ tender }: TenderCardProps) {

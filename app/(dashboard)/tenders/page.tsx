@@ -15,11 +15,12 @@ import {
 } from '@/components/ui/select';
 import { exportToCSV } from '@/lib/exportUtils';
 import { formatCurrency, formatDate } from '@/lib/formatters';
+import { useCreateTender, useTenders } from '@/hooks/queries/useTenders';
 import { Download, Eye, Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useTenders, useCreateTender } from '@/hooks/queries/useTenders';
+import type { TenderCreatePayload } from '@/types/tender';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -31,6 +32,7 @@ export default function TendersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
   const [newTenderDialogOpen, setNewTenderDialogOpen] = useState(false);
+
   const { data: tendersData, isLoading } = useTenders({
     page: currentPage,
     limit: itemsPerPage,
@@ -39,30 +41,29 @@ export default function TendersPage() {
     search: searchQuery || undefined,
   });
 
-  const { mutate: createTender } = useCreateTender();
+  const { mutate: createTender, isPending: isCreating } = useCreateTender();
 
-  const filteredTenders = tendersData?.data || [];
+  const tenders = tendersData?.data || [];
   const totalPages = Math.ceil((tendersData?.meta?.total || 0) / itemsPerPage);
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      Open: 'bg-green-100 text-green-800',
-      Closed: 'bg-gray-100 text-gray-800',
-      Awarded: 'bg-blue-100 text-blue-800',
-      'Under Review': 'bg-yellow-100 text-yellow-800',
+      published: 'bg-green-100 text-green-800',
+      awarded: 'bg-blue-100 text-blue-800',
+      cancelled: 'bg-gray-100 text-gray-800',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] ?? 'bg-gray-100 text-gray-800';
   };
+
   const handleExport = () => {
-    const dataToExport = filteredTenders.map(t => ({
+    const dataToExport = tenders.map(t => ({
       Reference: t.tender_number,
       Title: t.title,
       Amount: formatCurrency(t.amount),
       Status: t.status,
       'Risk Score': t.risk_score,
-      Deadline: t.submission_deadline
-        ? formatDate(new Date(t.submission_deadline))
-        : 'N/A',
-      Entity: t.procuring_entity,
+      Deadline: t.deadline ? formatDate(new Date(t.deadline)) : 'N/A',
+      Entity: t.entity_name,
       County: t.county,
     }));
     exportToCSV(
@@ -71,7 +72,8 @@ export default function TendersPage() {
     );
     toast.success('Tenders exported successfully');
   };
-  const handleNewTender = (tenderData: any) => {
+
+  const handleNewTender = (tenderData: TenderCreatePayload) => {
     createTender(tenderData, {
       onSuccess: () => {
         toast.success('Tender created successfully');
@@ -79,11 +81,13 @@ export default function TendersPage() {
       },
       onError: () => {
         toast.error('Failed to create tender');
-      }
+      },
     });
   };
+
   return (
     <div className='space-y-6'>
+      {/* Header */}
       <div className='flex items-center justify-between'>
         <div>
           <h1 className='text-3xl font-bold tracking-tight'>Tenders</h1>
@@ -106,8 +110,10 @@ export default function TendersPage() {
         open={newTenderDialogOpen}
         onOpenChange={setNewTenderDialogOpen}
         onSubmit={handleNewTender}
+        isSubmitting={isCreating}
       />
       <div className='bg-white rounded-lg border border-gray-200 p-4 space-y-6'>
+        {/* Filters */}
         <div className='flex gap-4 flex-wrap items-center'>
           <div className='flex-1 min-w-72 relative'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
@@ -133,10 +139,9 @@ export default function TendersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>All Statuses</SelectItem>
-              <SelectItem value='Open'>Open</SelectItem>
-              <SelectItem value='Closed'>Closed</SelectItem>
-              <SelectItem value='Awarded'>Awarded</SelectItem>
-              <SelectItem value='Under Review'>Under Review</SelectItem>
+              <SelectItem value='published'>Published</SelectItem>
+              <SelectItem value='awarded'>Awarded</SelectItem>
+              <SelectItem value='cancelled'>Cancelled</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -151,16 +156,17 @@ export default function TendersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>All Risk Levels</SelectItem>
-              <SelectItem value='low'>Low Risk (0-39)</SelectItem>
-              <SelectItem value='medium'>Medium Risk (40-69)</SelectItem>
-              <SelectItem value='high'>High Risk (70+)</SelectItem>
+              <SelectItem value='LOW'>Low</SelectItem>
+              <SelectItem value='MEDIUM'>Medium</SelectItem>
+              <SelectItem value='HIGH'>High</SelectItem>
+              <SelectItem value='CRITICAL'>Critical</SelectItem>
             </SelectContent>
           </Select>
           <div className='ml-auto text-sm text-gray-600'>
-            {filteredTenders.length} tender
-            {filteredTenders.length !== 1 ? 's' : ''}
+            {tenders.length} tender{tenders.length !== 1 ? 's' : ''}
           </div>
         </div>
+        {/* Table */}
         <div className='overflow-x-auto'>
           <table className='w-full text-sm'>
             <thead>
@@ -170,6 +176,9 @@ export default function TendersPage() {
                 </th>
                 <th className='text-left py-3 px-4 font-semibold text-gray-900'>
                   Title
+                </th>
+                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
+                  Entity
                 </th>
                 <th className='text-left py-3 px-4 font-semibold text-gray-900'>
                   Amount
@@ -191,18 +200,18 @@ export default function TendersPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className='py-8 text-center text-gray-500'>
+                  <td colSpan={8} className='py-8 text-center text-gray-500'>
                     Loading tenders...
                   </td>
                 </tr>
-              ) : filteredTenders.length === 0 ? (
+              ) : tenders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className='py-8 text-center text-gray-500'>
+                  <td colSpan={8} className='py-8 text-center text-gray-500'>
                     No tenders found matching your criteria.
                   </td>
                 </tr>
               ) : (
-                filteredTenders.map(tender => (
+                tenders.map(tender => (
                   <tr
                     key={tender.id}
                     className='border-b border-gray-100 hover:bg-gray-50'
@@ -212,6 +221,9 @@ export default function TendersPage() {
                     </td>
                     <td className='py-3 px-4 text-gray-700 max-w-xs truncate'>
                       {tender.title}
+                    </td>
+                    <td className='py-3 px-4 text-gray-600 max-w-xs truncate'>
+                      {tender.entity_name}
                     </td>
                     <td className='py-3 px-4 text-gray-900 font-medium'>
                       {formatCurrency(tender.amount)}
@@ -225,9 +237,9 @@ export default function TendersPage() {
                       <RiskScoreMeter score={tender.risk_score} />
                     </td>
                     <td className='py-3 px-4 text-gray-600'>
-                      {formatDate(
-                        new Date(tender.submission_deadline || Date.now()),
-                      )}
+                      {tender.deadline
+                        ? formatDate(new Date(tender.deadline))
+                        : 'N/A'}
                     </td>
                     <td className='py-3 px-4'>
                       <Button
@@ -239,7 +251,8 @@ export default function TendersPage() {
                       </Button>
                     </td>
                   </tr>
-                )))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
