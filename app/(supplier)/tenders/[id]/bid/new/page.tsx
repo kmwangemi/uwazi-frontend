@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useTender } from '@/hooks/queries/useTenders';
 import { formatCurrency, formatDate } from '@/lib/formatters';
-import { mockTenders } from '@/lib/mockData';
 import {
   AlertCircle,
   ArrowLeft,
@@ -21,8 +21,9 @@ import { toast } from 'sonner';
 export default function SubmitBidPage() {
   const router = useRouter();
   const params = useParams();
-  const tenderId = parseInt(params.id as string);
-  const tender = mockTenders.find(t => t.id === tenderId);
+  const tenderId = params.id as string; // ✅ string UUID, not parseInt
+
+  const { data: tender, isLoading, isError } = useTender(tenderId);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -39,7 +40,68 @@ export default function SubmitBidPage() {
     termsAccepted: false,
   });
 
-  if (!tender) {
+  const totalSteps = 5;
+
+  const priceVariance =
+    formData.quotePrice && tender
+      ? (
+          ((parseFloat(formData.quotePrice) - tender.amount) / tender.amount) *
+          100
+        ).toFixed(1)
+      : null;
+
+  const priceWithinRange =
+    priceVariance !== null ? Math.abs(parseFloat(priceVariance)) <= 20 : true;
+
+  const handleFileUpload = (
+    category: 'technical' | 'financial' | 'compliance',
+    files: FileList,
+  ) => {
+    const fileArray = Array.from(files);
+    if (category === 'technical') {
+      setFormData(prev => ({ ...prev, technicalDocuments: fileArray }));
+    } else if (category === 'financial') {
+      setFormData(prev => ({ ...prev, financialDocuments: fileArray }));
+    } else {
+      setFormData(prev => ({ ...prev, complianceDocuments: fileArray }));
+    }
+  };
+
+  const handleSubmitBid = () => {
+    const bidId = `BID-${Date.now()}`;
+    toast.success('Bid submitted successfully!', {
+      description: `Your bid reference: ${bidId}`,
+    });
+    setTimeout(() => router.push('/tenders/my-bids'), 2000);
+  };
+
+  const canProceedToNext = (() => {
+    if (currentStep === 1) {
+      return !!(
+        formData.quotePrice &&
+        formData.deliveryTimeline &&
+        formData.paymentTerms &&
+        priceWithinRange
+      );
+    }
+    if (currentStep === 2) return formData.technicalDocuments.length > 0;
+    if (currentStep === 3) return formData.financialDocuments.length > 0;
+    if (currentStep === 4) return formData.complianceDocuments.length > 0;
+    if (currentStep === 5) return formData.termsAccepted;
+    return false;
+  })();
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className='min-h-screen flex items-center justify-center'>
+        <p className='text-gray-500'>Loading tender details...</p>
+      </div>
+    );
+  }
+
+  // Error / not found state
+  if (isError || !tender) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
         <Card className='p-8 max-w-md text-center'>
@@ -52,52 +114,6 @@ export default function SubmitBidPage() {
       </div>
     );
   }
-
-  const totalSteps = 5;
-  const priceVariance = (
-    ((parseFloat(formData.quotePrice) - tender.amount) / tender.amount) *
-    100
-  ).toFixed(1);
-  const priceWithinRange = Math.abs(parseFloat(priceVariance)) <= 20;
-
-  const handleFileUpload = (
-    category: 'technical' | 'financial' | 'compliance',
-    files: FileList,
-  ) => {
-    if (category === 'technical') {
-      setFormData({ ...formData, technicalDocuments: Array.from(files) });
-    } else if (category === 'financial') {
-      setFormData({ ...formData, financialDocuments: Array.from(files) });
-    } else {
-      setFormData({ ...formData, complianceDocuments: Array.from(files) });
-    }
-  };
-
-  const handleSubmitBid = () => {
-    const bidId = `BID-${Date.now()}`;
-    toast.success('Bid submitted successfully!', {
-      description: `Your bid reference: ${bidId}`,
-    });
-    setTimeout(() => {
-      router.push('/tenders/my-bids');
-    }, 2000);
-  };
-
-  const canProceedToNext =
-    currentStep === 1 &&
-    formData.quotePrice &&
-    formData.deliveryTimeline &&
-    formData.paymentTerms
-      ? priceWithinRange
-      : currentStep === 2 && formData.technicalDocuments.length > 0
-        ? true
-        : currentStep === 3 && formData.financialDocuments.length > 0
-          ? true
-          : currentStep === 4 && formData.complianceDocuments.length > 0
-            ? true
-            : currentStep === 5 && formData.termsAccepted
-              ? true
-              : false;
 
   return (
     <div className='min-h-screen bg-background py-8 px-4'>
@@ -152,11 +168,11 @@ export default function SubmitBidPage() {
                 ))}
               </div>
               <div className='mt-6 pt-6 border-t border-gray-200'>
-                <p className='text-xs text-gray-600 mb-2'>Tender Deadline</p>
+                <p className='text-xs text-gray-600 mb-1'>Tender Deadline</p>
                 <p className='text-sm font-semibold text-gray-900 mb-3'>
-                  {formatDate(
-                    new Date(tender.submission_deadline || Date.now()),
-                  )}
+                  {tender.deadline // ✅ was submission_deadline
+                    ? formatDate(new Date(tender.deadline))
+                    : 'N/A'}
                 </p>
                 <p className='text-xs text-gray-600'>Budget Range:</p>
                 <p className='text-sm font-semibold text-primary'>
@@ -180,11 +196,14 @@ export default function SubmitBidPage() {
                       placeholder='Enter your quote price'
                       value={formData.quotePrice}
                       onChange={e =>
-                        setFormData({ ...formData, quotePrice: e.target.value })
+                        setFormData(prev => ({
+                          ...prev,
+                          quotePrice: e.target.value,
+                        }))
                       }
                       className='text-lg'
                     />
-                    {formData.quotePrice && (
+                    {formData.quotePrice && priceVariance !== null && (
                       <div
                         className={`mt-2 text-sm ${priceWithinRange ? 'text-green-600' : 'text-red-600'}`}
                       >
@@ -204,10 +223,10 @@ export default function SubmitBidPage() {
                       placeholder='e.g., 90'
                       value={formData.deliveryTimeline}
                       onChange={e =>
-                        setFormData({
-                          ...formData,
+                        setFormData(prev => ({
+                          ...prev,
                           deliveryTimeline: e.target.value,
-                        })
+                        }))
                       }
                     />
                   </div>
@@ -218,12 +237,12 @@ export default function SubmitBidPage() {
                     <select
                       value={formData.paymentTerms}
                       onChange={e =>
-                        setFormData({
-                          ...formData,
+                        setFormData(prev => ({
+                          ...prev,
                           paymentTerms: e.target.value,
-                        })
+                        }))
                       }
-                      className='w-full px-3 py-2 border border-gray-300 rounded-lg'
+                      className='w-full px-3 py-2 border border-gray-300 rounded-lg bg-background text-sm'
                     >
                       <option value=''>Select payment terms</option>
                       <option value='net30'>Net 30 days</option>
@@ -243,7 +262,10 @@ export default function SubmitBidPage() {
                       placeholder='e.g., 12 months'
                       value={formData.warranty}
                       onChange={e =>
-                        setFormData({ ...formData, warranty: e.target.value })
+                        setFormData(prev => ({
+                          ...prev,
+                          warranty: e.target.value,
+                        }))
                       }
                     />
                   </div>
@@ -281,9 +303,9 @@ export default function SubmitBidPage() {
                       />
                     </div>
                     {formData.technicalDocuments.length > 0 && (
-                      <div className='mt-4 space-y-2'>
+                      <ul className='mt-4 space-y-2'>
                         {formData.technicalDocuments.map((file, idx) => (
-                          <div
+                          <li
                             key={idx}
                             className='flex items-center gap-2 p-2 bg-green-50 rounded'
                           >
@@ -292,9 +314,9 @@ export default function SubmitBidPage() {
                               {file.name}
                             </span>
                             <CheckCircle2 className='h-4 w-4 text-green-600 ml-auto' />
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
                   </div>
                   <div>
@@ -305,10 +327,10 @@ export default function SubmitBidPage() {
                       placeholder='Describe your implementation approach...'
                       value={formData.technicalProposal}
                       onChange={e =>
-                        setFormData({
-                          ...formData,
+                        setFormData(prev => ({
+                          ...prev,
                           technicalProposal: e.target.value,
-                        })
+                        }))
                       }
                       rows={4}
                     />
@@ -321,10 +343,10 @@ export default function SubmitBidPage() {
                       placeholder='Describe your QA process...'
                       value={formData.qualityApproach}
                       onChange={e =>
-                        setFormData({
-                          ...formData,
+                        setFormData(prev => ({
+                          ...prev,
                           qualityApproach: e.target.value,
-                        })
+                        }))
                       }
                       rows={3}
                     />
@@ -337,10 +359,10 @@ export default function SubmitBidPage() {
                       placeholder='How will you mitigate project risks...'
                       value={formData.riskMitigation}
                       onChange={e =>
-                        setFormData({
-                          ...formData,
+                        setFormData(prev => ({
+                          ...prev,
                           riskMitigation: e.target.value,
-                        })
+                        }))
                       }
                       rows={3}
                     />
@@ -379,9 +401,9 @@ export default function SubmitBidPage() {
                       />
                     </div>
                     {formData.financialDocuments.length > 0 && (
-                      <div className='mt-4 space-y-2'>
+                      <ul className='mt-4 space-y-2'>
                         {formData.financialDocuments.map((file, idx) => (
-                          <div
+                          <li
                             key={idx}
                             className='flex items-center gap-2 p-2 bg-green-50 rounded'
                           >
@@ -390,9 +412,9 @@ export default function SubmitBidPage() {
                               {file.name}
                             </span>
                             <CheckCircle2 className='h-4 w-4 text-green-600 ml-auto' />
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
                   </div>
                   <Card className='p-4 bg-blue-50 border-blue-200'>
@@ -435,9 +457,9 @@ export default function SubmitBidPage() {
                       />
                     </div>
                     {formData.complianceDocuments.length > 0 && (
-                      <div className='mt-4 space-y-2'>
+                      <ul className='mt-4 space-y-2'>
                         {formData.complianceDocuments.map((file, idx) => (
-                          <div
+                          <li
                             key={idx}
                             className='flex items-center gap-2 p-2 bg-green-50 rounded'
                           >
@@ -446,9 +468,9 @@ export default function SubmitBidPage() {
                               {file.name}
                             </span>
                             <CheckCircle2 className='h-4 w-4 text-green-600 ml-auto' />
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
                   </div>
                   <Card className='p-4 bg-amber-50 border-amber-200'>
@@ -469,9 +491,21 @@ export default function SubmitBidPage() {
                     </h3>
                     <div className='space-y-3 bg-gray-50 p-4 rounded-lg'>
                       <div className='flex justify-between'>
+                        <span className='text-gray-600'>Tender:</span>
+                        <span className='font-semibold text-right max-w-xs truncate'>
+                          {tender.title}
+                        </span>
+                      </div>
+                      <div className='flex justify-between'>
+                        <span className='text-gray-600'>Reference:</span>
+                        <span className='font-semibold'>
+                          {tender.tender_number}
+                        </span>
+                      </div>
+                      <div className='flex justify-between'>
                         <span className='text-gray-600'>Quote Price:</span>
                         <span className='font-semibold'>
-                          {formatCurrency(parseInt(formData.quotePrice))}
+                          {formatCurrency(parseFloat(formData.quotePrice))}
                         </span>
                       </div>
                       <div className='flex justify-between'>
@@ -488,6 +522,14 @@ export default function SubmitBidPage() {
                           {formData.paymentTerms.replace('-', ' ')}
                         </span>
                       </div>
+                      {formData.warranty && (
+                        <div className='flex justify-between'>
+                          <span className='text-gray-600'>Warranty:</span>
+                          <span className='font-semibold'>
+                            {formData.warranty}
+                          </span>
+                        </div>
+                      )}
                       <div className='border-t border-gray-300 pt-3 flex justify-between'>
                         <span className='text-gray-600'>
                           Documents Attached:
@@ -506,37 +548,39 @@ export default function SubmitBidPage() {
                       id='terms'
                       checked={formData.termsAccepted}
                       onChange={e =>
-                        setFormData({
-                          ...formData,
+                        setFormData(prev => ({
+                          ...prev,
                           termsAccepted: e.target.checked,
-                        })
+                        }))
                       }
                       className='mt-1'
                     />
-                    <label htmlFor='terms' className='text-sm text-gray-700'>
+                    <label
+                      htmlFor='terms'
+                      className='text-sm text-gray-700 cursor-pointer'
+                    >
                       I confirm that all information provided is accurate and
                       complete. I accept the tender terms and conditions.
                     </label>
                   </div>
                 </div>
               )}
-              {/* Navigation Buttons */}
+              {/* Navigation */}
               <div className='mt-8 flex justify-between'>
                 <Button
                   variant='outline'
-                  onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+                  onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
                   disabled={currentStep === 1}
                 >
                   Previous
                 </Button>
-
-                <div className='flex gap-3'>
-                  <span className='text-sm text-gray-600 self-center'>
+                <div className='flex gap-3 items-center'>
+                  <span className='text-sm text-gray-600'>
                     Step {currentStep} of {totalSteps}
                   </span>
                   {currentStep < totalSteps ? (
                     <Button
-                      onClick={() => setCurrentStep(currentStep + 1)}
+                      onClick={() => setCurrentStep(prev => prev + 1)}
                       disabled={!canProceedToNext}
                     >
                       Next
