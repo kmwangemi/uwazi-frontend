@@ -1,14 +1,14 @@
 import api from '@/lib/api';
 import { mockSupplierBids } from '@/lib/mockData';
-import { FilterParams, PaginationParams, ApiResponse } from '@/types/common';
-import { TenderOriginal, Tender } from '@/types/tender';
+import { ApiResponse, FilterParams, PaginationParams } from '@/types/common';
+import { Tender } from '@/types/tender';
 
 export interface BidPayload {
-    tenderId: number;
-    bidAmount: number;
-    paymentTerms: string;
-    deliveryTimeline: number;
-    documents?: File[];
+  tenderId: number;
+  bidAmount: number;
+  paymentTerms: string;
+  deliveryTimeline: number;
+  documents?: File[];
 }
 
 export const supplierTendersService = {

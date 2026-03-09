@@ -1,14 +1,16 @@
-export interface procuring_entity {
-  id: number;
+export interface ProcuringEntity {
+  id: string;
   entity_code: string;
   name: string;
-  entity_type: 'MINISTRY' | 'COUNTY' | 'PARASTATAL' | 'OTHER';
+  // entity_type: 'MINISTRY' | 'COUNTY' | 'PARASTATAL' | 'OTHER';
+  entity_type: string | null;
   county: string | null;
   total_tenders: number;
   total_expenditure: number;
   flagged_tenders: number;
   average_corruption_score: number;
   created_at: string;
+  updated_at: string;
 }
 
 export interface EntityStatistics {

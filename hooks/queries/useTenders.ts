@@ -1,7 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tendersService } from '@/services/tendersService';
 import type { FilterParams, PaginationParams } from '@/types/common';
 import type { TenderCreatePayload } from '@/types/tender';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const tenderKeys = {
   all: ['tenders'] as const,

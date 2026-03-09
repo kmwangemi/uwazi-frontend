@@ -4,7 +4,11 @@ import type {
   FilterParams,
   PaginationParams,
 } from '@/types/common';
-import type { TenderOriginal, Tender, TenderCreatePayload } from '@/types/tender';
+import type {
+  Tender,
+  TenderCreatePayload,
+  TenderOriginal,
+} from '@/types/tender';
 
 export const tendersService = {
   getTenders: async (
@@ -27,14 +31,11 @@ export const tendersService = {
     payload: TenderCreatePayload,
   ): Promise<TenderOriginal> => {
     const { attachments, ...fields } = payload;
-
     const formData = new FormData();
     formData.append('data', JSON.stringify(fields));
-
     if (attachments?.length) {
       attachments.forEach(file => formData.append('attachments', file));
     }
-
     const response = await api.post<TenderOriginal>('/tenders', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });

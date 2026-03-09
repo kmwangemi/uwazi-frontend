@@ -1,80 +1,86 @@
 import { DashboardStats } from '@/types/common';
-import type { procuring_entity } from '@/types/entity';
+import type { ProcuringEntity } from '@/types/entity';
 import type { Investigation } from '@/types/investigation';
 import type { PublicReport } from '@/types/report';
 import type { Supplier } from '@/types/supplier';
 import type { TenderOriginal } from '@/types/tender';
 import { KENYA_COUNTIES } from './constants';
 
-export const mockTenders: TenderOriginal[] = Array.from({ length: 50 }, (_, i) => ({
-  id: i + 1,
-  tender_number: `TND/2024/${String(i + 1).padStart(3, '0')}`,
-  title: [
-    'Supply and Delivery of Office Furniture',
-    'Medical Equipment and Supplies',
-    'Road Construction and Maintenance',
-    'ICT Infrastructure Setup',
-    'Consultancy Services',
-    'Security Services Contract',
-    'Stationery and Printing Services',
-    'Vehicle Supply and Maintenance',
-  ][i % 8],
-  description: 'Procurement of goods and services for county operations',
-  amount: Math.floor(Math.random() * 1000000000) + 100000,
-  tender_type: ['Open', 'Restricted', 'Direct'][i % 3] as any,
-  procuring_entity: [
-    'Nairobi County',
-    'Ministry of Health',
-    'Ministry of Roads',
-    'Ministry of ICT',
-  ][i % 4],
-  county: KENYA_COUNTIES[i % KENYA_COUNTIES.length],
-  category: [
-    'Construction & Infrastructure',
-    'Medical Equipment & Supplies',
-    'Office Equipment & Furniture',
-    'Consultancy Services',
-  ][i % 4],
-  submission_deadline: new Date(
-    Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000,
-  )
-    .toISOString()
-    .split('T')[0],
-  award_date:
-    i % 2 === 0
-      ? new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0]
-      : null,
-  awarded_supplier_id: i % 2 === 0 ? Math.floor(Math.random() * 20) + 1 : null,
-  awarded_supplier_name:
-    i % 2 === 0 ? `Supplier ${Math.floor(Math.random() * 20) + 1}` : undefined,
-  status: [
-    'PUBLISHED',
-    'AWARDED',
-    'FLAGGED',
-    'UNDER_INVESTIGATION',
-    'COMPLETED',
-  ][Math.floor(Math.random() * 5)] as any,
-  risk_score: Math.floor(Math.random() * 100),
-  is_flagged: Math.random() > 0.7,
-  corruption_flags:
-    Math.random() > 0.6
-      ? [
-          {
-            type: 'PRICE_INFLATION',
-            severity: Math.random() > 0.5 ? 'HIGH' : 'MEDIUM',
-            description: 'Price significantly above market rate',
-            score: Math.floor(Math.random() * 50),
-            evidence: { source: 'market analysis' },
-          },
-        ]
-      : [],
-  created_at: new Date(
-    Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,
-  ).toISOString(),
-  updated_at: new Date().toISOString(),
-}));
+export const mockTenders: TenderOriginal[] = Array.from(
+  { length: 50 },
+  (_, i) => ({
+    id: i + 1,
+    tender_number: `TND/2024/${String(i + 1).padStart(3, '0')}`,
+    title: [
+      'Supply and Delivery of Office Furniture',
+      'Medical Equipment and Supplies',
+      'Road Construction and Maintenance',
+      'ICT Infrastructure Setup',
+      'Consultancy Services',
+      'Security Services Contract',
+      'Stationery and Printing Services',
+      'Vehicle Supply and Maintenance',
+    ][i % 8],
+    description: 'Procurement of goods and services for county operations',
+    amount: Math.floor(Math.random() * 1000000000) + 100000,
+    tender_type: ['Open', 'Restricted', 'Direct'][i % 3] as any,
+    ProcuringEntity: [
+      'Nairobi County',
+      'Ministry of Health',
+      'Ministry of Roads',
+      'Ministry of ICT',
+    ][i % 4],
+    county: KENYA_COUNTIES[i % KENYA_COUNTIES.length],
+    category: [
+      'Construction & Infrastructure',
+      'Medical Equipment & Supplies',
+      'Office Equipment & Furniture',
+      'Consultancy Services',
+    ][i % 4],
+    submission_deadline: new Date(
+      Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000,
+    )
+      .toISOString()
+      .split('T')[0],
+    award_date:
+      i % 2 === 0
+        ? new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0]
+        : null,
+    awarded_supplier_id:
+      i % 2 === 0 ? Math.floor(Math.random() * 20) + 1 : null,
+    awarded_supplier_name:
+      i % 2 === 0
+        ? `Supplier ${Math.floor(Math.random() * 20) + 1}`
+        : undefined,
+    status: [
+      'PUBLISHED',
+      'AWARDED',
+      'FLAGGED',
+      'UNDER_INVESTIGATION',
+      'COMPLETED',
+    ][Math.floor(Math.random() * 5)] as any,
+    risk_score: Math.floor(Math.random() * 100),
+    is_flagged: Math.random() > 0.7,
+    corruption_flags:
+      Math.random() > 0.6
+        ? [
+            {
+              type: 'PRICE_INFLATION',
+              severity: Math.random() > 0.5 ? 'HIGH' : 'MEDIUM',
+              description: 'Price significantly above market rate',
+              score: Math.floor(Math.random() * 50),
+              evidence: { source: 'market analysis' },
+            },
+          ]
+        : [],
+    created_at: new Date(
+      Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,
+    ).toISOString(),
+    updated_at: new Date().toISOString(),
+  }),
+);
 
 export const mockSuppliers: Supplier[] = Array.from({ length: 30 }, (_, i) => ({
   id: i + 1,
@@ -120,7 +126,7 @@ export const mockSuppliers: Supplier[] = Array.from({ length: 30 }, (_, i) => ({
   ).toISOString(),
 }));
 
-export const mockEntities: procuring_entity[] = Array.from(
+export const mockEntities: ProcuringEntity[] = Array.from(
   { length: 20 },
   (_, i) => ({
     id: i + 1,
@@ -166,8 +172,8 @@ export const mockInvestigations: Investigation[] = Array.from(
     closed_date:
       i % 4 === 3
         ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0]
+            .toISOString()
+            .split('T')[0]
         : null,
     findings: i % 4 === 3 ? 'Investigation completed with findings' : null,
     estimated_loss: Math.floor(Math.random() * 100000000) + 1000000,
@@ -175,8 +181,8 @@ export const mockInvestigations: Investigation[] = Array.from(
     outcome:
       i % 4 === 3
         ? (['CONFIRMED_FRAUD', 'NO_FRAUD', 'INCONCLUSIVE'][
-          Math.floor(Math.random() * 3)
-        ] as any)
+            Math.floor(Math.random() * 3)
+          ] as any)
         : null,
   }),
 );
@@ -211,14 +217,14 @@ export const mockDashboardStats: DashboardStats = {
       flagged_value: Math.floor(Math.random() * 2000000000) + 100000000,
     };
   }),
-  top_corrupt_entities: mockEntities.slice(0, 10).map(e => ({
-    entity_code: e.entity_code,
-    entity_name: e.name,
-    total_tenders: e.total_tenders,
-    flagged_tenders: e.flagged_tenders,
-    corruption_rate: (e.flagged_tenders / e.total_tenders) * 100,
-    risk_score: e.average_corruption_score,
-  })),
+  // top_corrupt_entities: mockEntities.slice(0, 10).map(e => ({
+  //   entity_code: e.entity_code,
+  //   entity_name: e.name,
+  //   total_tenders: e.total_tenders,
+  //   flagged_tenders: e.flagged_tenders,
+  //   corruption_rate: (e.flagged_tenders / e.total_tenders) * 100,
+  //   risk_score: e.average_corruption_score,
+  // })),
 };
 
 export const mockPublicReports: PublicReport[] = [
