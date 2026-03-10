@@ -9,14 +9,18 @@ import {
   BarChart3,
   Briefcase,
   Building2,
+  CheckCircle2,
+  Clock,
   FileBarChart,
   FileText,
   Globe,
   LayoutDashboard,
+  Search,
+  Settings,
+  TrendingUp,
+  User,
   Users,
   X,
-  Settings,
-  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -126,6 +130,49 @@ const navItems = [
       'supplier',
       'procurement_officer',
     ] as UserRole[],
+  },
+  // supplier menus
+  {
+    label: 'Dashboard',
+    href: '/supplier/dashboard',
+    icon: LayoutDashboard,
+    roles: ['supplier'] as UserRole[],
+  },
+  {
+    label: 'Browse Tenders',
+    href: '/supplier/tenders/available',
+    icon: Search,
+    roles: ['supplier'] as UserRole[],
+  },
+  {
+    label: 'My Bids',
+    href: '/supplier/my-bids',
+    icon: FileText,
+    roles: ['supplier'] as UserRole[],
+  },
+  {
+    label: 'Active Bids',
+    href: '/supplier/my-bids?tab=active',
+    icon: TrendingUp,
+    roles: ['supplier'] as UserRole[],
+  },
+  {
+    label: 'Pending Evaluation',
+    href: '/supplier/my-bids?tab=pending',
+    icon: Clock,
+    roles: ['supplier'] as UserRole[],
+  },
+  {
+    label: 'Won Tenders',
+    href: '/supplier/my-bids?tab=won',
+    icon: CheckCircle2,
+    roles: ['supplier'] as UserRole[],
+  },
+  {
+    label: 'Settings',
+    href: '/supplier/settings',
+    icon: Settings,
+    roles: ['supplier'] as UserRole[],
   },
 ];
 

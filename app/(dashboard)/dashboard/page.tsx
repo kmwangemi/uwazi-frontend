@@ -63,7 +63,7 @@ export default function DashboardPage() {
     { name: 'Low', value: stats.tenders_by_risk.low, fill: RISK_COLORS.low },
   ];
 
-  const countySavingsData = stats.savings_by_county
+  const countySavingsData = stats?.savings_by_county
     .slice(0, 10)
     .map(county => ({
       county: county.county.substring(0, 6),
@@ -92,33 +92,33 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        <StatsCard
+        {/* <StatsCard
           title='Total Tenders Monitored'
           value={stats.total_tenders.toLocaleString()}
           icon={<FolderOpen className='h-6 w-6' />}
           trend={{ value: 12, isPositive: true }}
-        />
-        <StatsCard
+        /> */}
+        {/* <StatsCard
           title='Flagged Tenders'
           value={stats.flagged_tenders.toLocaleString()}
           icon={<AlertCircle className='h-6 w-6 text-red-600' />}
           trend={{ value: 8, isPositive: false }}
           className='border-l-4 border-l-red-600'
-        />
-        <StatsCard
+        /> */}
+        {/* <StatsCard
           title='Estimated Savings'
           value={formatCurrency(stats.estimated_savings, false)}
           icon={<Check className='h-6 w-6 text-green-600' />}
           trend={{ value: 15, isPositive: true }}
           className='border-l-4 border-l-green-600'
-        />
-        <StatsCard
+        /> */}
+        {/* <StatsCard
           title='Active Investigations'
           value={stats.active_investigations.toLocaleString()}
           icon={<TrendingUp className='h-6 w-6 text-orange-600' />}
           trend={{ value: 5, isPositive: true }}
           className='border-l-4 border-l-orange-600'
-        />
+        /> */}
       </div>
 
       {/* Charts Grid */}
@@ -230,7 +230,7 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody className='divide-y divide-gray-200'>
-              {stats.top_corrupt_entities.map(entity => (
+              {/* {stats.top_corrupt_entities.map(entity => (
                 <tr key={entity.entity_code} className='hover:bg-gray-50'>
                   <td className='px-4 py-3 font-medium text-gray-900'>
                     {entity.entity_name}
@@ -257,7 +257,7 @@ export default function DashboardPage() {
                     </span>
                   </td>
                 </tr>
-              ))}
+              ))} */}
             </tbody>
           </table>
         </div>

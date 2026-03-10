@@ -8,7 +8,9 @@ export const dashboardService = {
       const response = await api.get<DashboardStats>('/dashboard/stats');
       return response.data;
     } catch (error) {
+      console.log('mockDashboardStats--->', JSON.stringify(mockDashboardStats));
       return mockDashboardStats;
+
     }
   },
 
