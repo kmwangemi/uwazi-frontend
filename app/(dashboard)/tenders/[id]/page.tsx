@@ -1,374 +1,326 @@
 'use client';
 
-import { RiskScoreMeter } from '@/components/shared/RiskScoreMeter';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { RiskBadge } from '@/components/RiskBadge';
+import { RiskGauge } from '@/components/RiskGauge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFlagTender, useTender } from '@/hooks/queries/useTenders';
-import { formatCurrency, formatDate } from '@/lib/formatters';
-import { ArrowLeft, Download, FileText, Flag } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import React from 'react';
-import { toast } from 'sonner';
+import {
+  tenderKeys,
+  useAnalyzeTenderRisk,
+  useTender,
+} from '@/lib/queries/useTendersQueries';
+import { useAuthStore } from '@/lib/store';
+import { daysUntil, formatDate, formatKES, timeUntil } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  AlertCircle,
+  ExternalLink,
+  FileText,
+  Lock,
+  RefreshCw,
+  Users,
+} from 'lucide-react';
+import { useParams } from 'next/navigation';
 
-export default function TenderDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = React.use(params);
-  const router = useRouter();
-
-  const { data: tender, isLoading, isError } = useTender(id);
-  const { mutate: flagTender, isPending: isFlagging } = useFlagTender();
-
-  const handleFlag = () => {
-    if (!tender) return;
-    flagTender(
-      { id: tender.id, reason: 'Manually flagged for review' },
-      {
-        onSuccess: () => toast.success('Tender flagged for review'),
-        onError: () => toast.error('Failed to flag tender'),
-      },
-    );
+export default function TenderDetailPage() {
+  const { id: tenderId } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
+  const { data: tender, isLoading, error } = useTender(tenderId);
+  const { mutate: analyzeRisk, isPending: isAnalyzing } =
+    useAnalyzeTenderRisk(tenderId);
+  const roles = useAuthStore(state => state.user?.roles ?? []);
+  const canInvestigate =
+    roles.includes('investigator') || roles.includes('admin');
+  const handleReanalyze = () => {
+    analyzeRisk(true, {
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: tenderKeys.detail(tenderId),
+        }),
+    });
   };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      published: 'bg-green-100 text-green-800',
-      awarded: 'bg-blue-100 text-blue-800',
-      cancelled: 'bg-gray-100 text-gray-800',
-    };
-    return colors[status] ?? 'bg-gray-100 text-gray-800';
-  };
-
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '';
-    return bytes < 1024 * 1024
-      ? `${(bytes / 1024).toFixed(0)} KB`
-      : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   if (isLoading) {
     return (
       <div className='space-y-6'>
-        <Button variant='outline' size='sm' onClick={() => router.back()}>
-          <ArrowLeft className='h-4 w-4 mr-2' />
-          Back
-        </Button>
-        <div className='text-center py-12 text-gray-500'>Loading tender...</div>
+        <Skeleton className='h-32' />
+        <Skeleton className='h-96' />
       </div>
     );
   }
-
-  if (isError || !tender) {
+  if (error || !tender) {
     return (
-      <div className='space-y-6'>
-        <Button variant='outline' onClick={() => router.back()}>
-          <ArrowLeft className='h-4 w-4 mr-2' />
-          Back
-        </Button>
-        <div className='text-center py-12'>
-          <h2 className='text-2xl font-bold text-gray-900'>Tender not found</h2>
+      <Card className='bg-[#121418] border-[#ef4444]/30 p-6'>
+        <div className='flex gap-3'>
+          <AlertCircle className='w-5 h-5 text-[#ef4444] shrink-0 mt-0.5' />
+          <div>
+            <h3 className='font-semibold text-[#ef4444]'>
+              Error Loading Tender
+            </h3>
+            <p className='text-sm text-[#94a3b8] mt-1'>
+              {error instanceof Error ? error.message : 'Tender not found'}
+            </p>
+          </div>
         </div>
-      </div>
+      </Card>
     );
   }
-
+  const daysLeft = daysUntil(tender.submission_deadline);
+  const timeLeft = timeUntil(tender.submission_deadline);
   return (
     <div className='space-y-6'>
-      {/* Header actions */}
-      <div className='flex items-center justify-between'>
-        <Button variant='outline' size='sm' onClick={() => router.back()}>
-          <ArrowLeft className='h-4 w-4 mr-2' />
-          Back
-        </Button>
-        <div className='flex gap-2'>
-          <Button
-            variant={tender.is_flagged ? 'default' : 'outline'}
-            size='sm'
-            onClick={handleFlag}
-            disabled={isFlagging}
-          >
-            <Flag className='h-4 w-4 mr-2' />
-            {tender.is_flagged ? 'Flagged' : 'Flag for Review'}
-          </Button>
-          <Button variant='outline' size='sm'>
-            <Download className='h-4 w-4 mr-2' />
-            Download
-          </Button>
-        </div>
-      </div>
-      {/* Title + amount */}
-      <div className='space-y-4'>
-        <div className='flex items-start justify-between gap-4'>
-          <div className='space-y-2 flex-1'>
-            <div className='flex items-center gap-2 flex-wrap'>
-              <h1 className='text-3xl font-bold text-gray-900'>
-                {tender.title}
-              </h1>
-              <Badge className={getStatusColor(tender.status)}>
-                {tender.status}
-              </Badge>
-              {tender.is_flagged && (
-                <Badge className='bg-red-100 text-red-800'>Flagged</Badge>
-              )}
+      {/* Header */}
+      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+        <div className='lg:col-span-2'>
+          <h1 className='text-3xl font-bold text-white mb-2'>{tender.title}</h1>
+          <div className='flex flex-wrap gap-4 mb-4'>
+            <div>
+              <p className='text-sm text-[#94a3b8]'>Reference</p>
+              <p className='font-mono text-[#00ff88]'>
+                {tender.reference_number}
+              </p>
             </div>
-            <p className='text-gray-600'>{tender.tender_number}</p>
+            <div>
+              <p className='text-sm text-[#94a3b8]'>Procuring Entity</p>
+              <p className='text-white'>{tender.entity.name}</p>
+            </div>
+            <div>
+              <p className='text-sm text-[#94a3b8]'>Method</p>
+              <p className='text-white capitalize'>
+                {tender.procurement_method}
+              </p>
+            </div>
           </div>
-          <div className='text-right'>
-            <p className='text-3xl font-bold text-gray-900'>
-              {formatCurrency(tender.amount)}
-            </p>
-            <p className='text-gray-600'>Budgeted Amount</p>
+          <div className='flex flex-wrap gap-3'>
+            {tender.risk_score && (
+              <RiskBadge
+                level={tender.risk_score.risk_level}
+                score={tender.risk_score.total_score}
+              />
+            )}
+            <div className='px-3 py-1.5 bg-[#1a1d23] border border-[#1f2937] rounded text-sm'>
+              <span className='text-[#94a3b8]'>Status: </span>
+              <span className='text-white capitalize'>{tender.status}</span>
+            </div>
           </div>
         </div>
-        {tender.risk_score >= 70 && (
-          <Alert className='border-red-200 bg-red-50'>
-            <Flag className='h-4 w-4 text-red-600' />
-            <AlertDescription className='text-red-800'>
-              This tender has a high corruption risk score ({tender.risk_score}
-              ). Additional scrutiny recommended.
-            </AlertDescription>
-          </Alert>
+        {/* Risk Gauge */}
+        {tender.risk_score && (
+          <Card className='bg-[#121418] border-[#1f2937] p-6 flex flex-col items-center'>
+            <RiskGauge score={tender.risk_score.total_score} size='md' />
+            <Button
+              onClick={handleReanalyze}
+              disabled={isAnalyzing}
+              variant='outline'
+              size='sm'
+              className='mt-4 border-[#1f2937] w-full'
+            >
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${isAnalyzing ? 'animate-spin' : ''}`}
+              />
+              {isAnalyzing ? 'Analyzing...' : 'Re-analyze'}
+            </Button>
+            {tender.risk_score.analyzed_at && (
+              <p className='text-xs text-[#64748b] mt-2 text-center'>
+                Last analyzed {formatDate(tender.risk_score.analyzed_at)}
+              </p>
+            )}
+          </Card>
         )}
       </div>
-      {/* Summary cards */}
-      <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-        <Card className='p-4'>
-          <p className='text-sm text-gray-600'>Corruption Risk</p>
-          <div className='mt-2'>
-            <RiskScoreMeter score={tender.risk_score} />
-          </div>
-        </Card>
-        <Card className='p-4'>
-          <p className='text-sm text-gray-600'>Posted Date</p>
-          <p className='text-lg font-semibold mt-2'>
-            {formatDate(new Date(tender.created_at))}
+      {/* Value & Deadline */}
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+        <Card className='bg-[#121418] border-[#1f2937] p-6'>
+          <p className='text-sm text-[#94a3b8] mb-2'>Estimated Value</p>
+          <p className='text-2xl font-mono font-bold text-[#00ff88]'>
+            {formatKES(tender.estimated_value)}
           </p>
         </Card>
-        <Card className='p-4'>
-          <p className='text-sm text-gray-600'>Deadline</p>
-          <p className='text-lg font-semibold mt-2'>
-            {tender.deadline ? formatDate(new Date(tender.deadline)) : 'N/A'}
+        <Card className='bg-[#121418] border-[#1f2937] p-6'>
+          <p className='text-sm text-[#94a3b8] mb-2'>Submission Deadline</p>
+          <p className='text-lg font-mono text-white'>
+            {formatDate(tender.submission_deadline)}
+          </p>
+          <p
+            className={`text-sm ${daysLeft < 0 ? 'text-[#ef4444]' : 'text-[#00ff88]'}`}
+          >
+            {timeLeft}
           </p>
         </Card>
-        <Card className='p-4'>
-          <p className='text-sm text-gray-600'>Procuring Entity</p>
-          <p className='text-lg font-semibold mt-2 line-clamp-2'>
-            {tender.entity_name} {/* ✅ was procuring_entity */}
-          </p>
+        <Card className='bg-[#121418] border-[#1f2937] p-6'>
+          <p className='text-sm text-[#94a3b8] mb-2'>County</p>
+          <p className='text-lg font-mono text-white'>{tender.county}</p>
         </Card>
       </div>
       {/* Tabs */}
-      <Card className='p-6'>
-        <Tabs defaultValue='details' className='space-y-4'>
-          <TabsList>
-            <TabsTrigger value='details'>Details</TabsTrigger>
-            <TabsTrigger value='analysis'>Risk Analysis</TabsTrigger>
-            <TabsTrigger value='documents'>
-              Documents
-              {tender.attachments?.length ? (
-                <span className='ml-1.5 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full'>
-                  {tender.attachments.length}
-                </span>
-              ) : null}
+      <Card className='bg-[#121418] border-[#1f2937]'>
+        <Tabs defaultValue='overview' className='w-full'>
+          <TabsList className='bg-[#0f1117] border-b border-[#1f2937] w-full justify-start p-4 h-auto'>
+            <TabsTrigger
+              value='overview'
+              className='text-[#94a3b8] data-[state=active]:text-[#00ff88]'
+            >
+              Overview
             </TabsTrigger>
-            <TabsTrigger value='history'>History</TabsTrigger>
+            <TabsTrigger
+              value='risks'
+              className='text-[#94a3b8] data-[state=active]:text-[#00ff88]'
+            >
+              <AlertCircle className='w-4 h-4 mr-2' /> Risks & Flags
+            </TabsTrigger>
+            <TabsTrigger
+              value='bids'
+              className='text-[#94a3b8] data-[state=active]:text-[#00ff88]'
+            >
+              <Users className='w-4 h-4 mr-2' /> Bids
+            </TabsTrigger>
+            <TabsTrigger
+              value='documents'
+              className='text-[#94a3b8] data-[state=active]:text-[#00ff88]'
+            >
+              <FileText className='w-4 h-4 mr-2' /> Documents
+            </TabsTrigger>
+            {canInvestigate && (
+              <TabsTrigger
+                value='investigation'
+                className='text-[#94a3b8] data-[state=active]:text-[#00ff88]'
+              >
+                <Lock className='w-4 h-4 mr-2' /> Investigation
+              </TabsTrigger>
+            )}
           </TabsList>
-          {/* Details tab */}
-          <TabsContent value='details' className='space-y-4'>
-            <div className='grid grid-cols-2 gap-6'>
+          <div className='p-6'>
+            <TabsContent value='overview' className='space-y-4'>
               <div>
-                <h3 className='font-semibold text-gray-900 mb-2'>
+                <h3 className='text-lg font-semibold text-white mb-3'>
                   Description
                 </h3>
-                <p className='text-gray-700'>
-                  {tender.description || 'No description provided.'}
+                <p className='text-[#e0e0e0] leading-relaxed text-sm whitespace-pre-wrap'>
+                  {tender.description}
                 </p>
               </div>
-              <div>
-                <h3 className='font-semibold text-gray-900 mb-2'>Category</h3>
-                <p className='text-gray-700 bg-gray-50 px-3 py-2 rounded-md inline-block'>
-                  {tender.category || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <h3 className='font-semibold text-gray-900 mb-2'>County</h3>
-                <p className='text-gray-700'>{tender.county || 'N/A'}</p>
-              </div>
-              <div>
-                <h3 className='font-semibold text-gray-900 mb-2'>
-                  Procurement Method
-                </h3>
-                <p className='text-gray-700'>
-                  {tender.procurement_method || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <h3 className='font-semibold text-gray-900 mb-2'>
-                  Source of Funds
-                </h3>
-                <p className='text-gray-700'>
-                  {tender.source_of_funds || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <h3 className='font-semibold text-gray-900 mb-2'>
-                  Entity Type
-                </h3>
-                <p className='text-gray-700'>{tender.entity_type || 'N/A'}</p>
-              </div>
-              <div>
-                <h3 className='font-semibold text-gray-900 mb-2'>
-                  Opening Date
-                </h3>
-                <p className='text-gray-700'>
-                  {tender.opening_date
-                    ? formatDate(new Date(tender.opening_date))
-                    : 'N/A'}
-                </p>
-              </div>
-              <div>
-                <h3 className='font-semibold text-gray-900 mb-2'>
-                  Contact Email
-                </h3>
-                <p className='text-gray-700'>{tender.contact_email || 'N/A'}</p>
-              </div>
-              {tender.tender_security_form && (
-                <div>
-                  <h3 className='font-semibold text-gray-900 mb-2'>
-                    Tender Security
-                  </h3>
-                  <p className='text-gray-700'>
-                    {tender.tender_security_form}
-                    {tender.tender_security_amount
-                      ? ` — ${formatCurrency(tender.tender_security_amount)}`
-                      : ''}
-                  </p>
+              <div className='grid grid-cols-2 gap-4'>
+                <div className='bg-[#1a1d23] p-4 rounded border border-[#1f2937]'>
+                  <p className='text-xs text-[#94a3b8] mb-1'>Category</p>
+                  <p className='text-white'>{tender.category}</p>
                 </div>
+                <div className='bg-[#1a1d23] p-4 rounded border border-[#1f2937]'>
+                  <p className='text-xs text-[#94a3b8] mb-1'>Created</p>
+                  <p className='text-white'>{formatDate(tender.created_at)}</p>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value='risks' className='space-y-4'>
+              {tender.risk_score?.ai_analysis ? (
+                <div className='bg-[#1a1d23] p-4 rounded border border-[#1f2937] text-xs text-[#e0e0e0] leading-relaxed font-mono'>
+                  {tender.risk_score.ai_analysis}
+                </div>
+              ) : (
+                <p className='text-[#94a3b8]'>No AI analysis available</p>
               )}
-            </div>
-          </TabsContent>
-          {/* Risk Analysis tab */}
-          <TabsContent value='analysis' className='space-y-4'>
-            <div className='space-y-4'>
-              <div className='flex items-center gap-4'>
-                <div>
-                  <p className='text-sm text-gray-600 mb-1'>Risk Score</p>
-                  <RiskScoreMeter score={tender.risk_score} />
-                </div>
-                {tender.risk_level && (
-                  <div>
-                    <p className='text-sm text-gray-600 mb-1'>Risk Level</p>
-                    <Badge
-                      className={
-                        tender.risk_level === 'CRITICAL'
-                          ? 'bg-red-100 text-red-800'
-                          : tender.risk_level === 'HIGH'
-                            ? 'bg-orange-100 text-orange-800'
-                            : tender.risk_level === 'MEDIUM'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
-                      }
+              {tender.red_flags && tender.red_flags.length > 0 && (
+                <div className='space-y-3'>
+                  <h4 className='font-semibold text-white'>Red Flags</h4>
+                  {tender.red_flags.map((flag, idx) => (
+                    <Card
+                      key={idx}
+                      className='bg-[#1a1d23] border-l-4 border-t-0 border-r-0 border-b-0 p-4'
+                      style={{
+                        borderLeftColor:
+                          flag.severity === 'critical'
+                            ? '#00ff88'
+                            : flag.severity === 'high'
+                              ? '#ef4444'
+                              : flag.severity === 'medium'
+                                ? '#f59e0b'
+                                : '#64748b',
+                      }}
                     >
-                      {tender.risk_level}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-              <div className='space-y-2'>
-                <h3 className='font-semibold text-gray-900'>Risk Factors</h3>
-                <ul className='space-y-2'>
-                  <li className='text-sm text-gray-700'>
-                    • Budget significantly higher than similar tenders
-                  </li>
-                  <li className='text-sm text-gray-700'>
-                    • Short deadline for submissions
-                  </li>
-                  <li className='text-sm text-gray-700'>
-                    • Limited number of potential bidders
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </TabsContent>
-          {/* Documents tab */}
-          <TabsContent value='documents' className='space-y-4'>
-            {tender.attachments && tender.attachments.length > 0 ? (
-              <ul className='space-y-2'>
-                {tender.attachments.map((attachment, idx) => (
-                  <li
-                    key={idx}
-                    className='border border-gray-200 rounded-md p-3 flex items-center justify-between hover:bg-gray-50'
-                  >
-                    <div className='flex items-center gap-3'>
-                      <FileText className='h-4 w-4 text-gray-400 shrink-0' />
-                      <div className='text-sm'>
-                        <p className='font-medium text-gray-900'>
-                          {attachment.file_name}
-                        </p>
-                        <p className='text-gray-500'>
-                          {formatFileSize(attachment.size)}
-                          {attachment.file_type
-                            ? ` • ${attachment.file_type}`
-                            : ''}
-                        </p>
+                      <div className='flex justify-between items-start mb-2'>
+                        <h5 className='font-semibold text-white'>
+                          {flag.flag_type}
+                        </h5>
+                        <RiskBadge
+                          level={flag.severity}
+                          size='sm'
+                          showScore={false}
+                        />
                       </div>
-                    </div>
-                    <Button variant='ghost' size='sm' asChild>
-                      <a
-                        href={attachment.url}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                      >
-                        <Download className='h-4 w-4' />
-                      </a>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className='text-gray-500 text-sm'>
-                No documents attached to this tender.
-              </p>
+                      <p className='text-sm text-[#e0e0e0]'>
+                        {flag.description}
+                      </p>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value='bids'>
+              {tender.bids && tender.bids.length > 0 ? (
+                <div className='space-y-3'>
+                  {tender.bids.map(bid => (
+                    <Card
+                      key={bid.id}
+                      className='bg-[#1a1d23] border-[#1f2937] p-4'
+                    >
+                      <div className='flex justify-between items-start mb-2'>
+                        <div>
+                          <h4 className='font-semibold text-white'>
+                            {bid.supplier_name}
+                          </h4>
+                          <p className='text-sm text-[#94a3b8]'>
+                            {formatKES(bid.amount)}
+                          </p>
+                        </div>
+                        {bid.is_winner && (
+                          <span className='px-2 py-1 bg-[#00ff88] text-black text-xs font-semibold rounded'>
+                            WINNER
+                          </span>
+                        )}
+                      </div>
+                      {bid.similarity_score && (
+                        <p className='text-xs text-[#64748b]'>
+                          Collusion similarity:{' '}
+                          {(bid.similarity_score * 100).toFixed(1)}%
+                        </p>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className='text-[#94a3b8]'>No bids available</p>
+              )}
+            </TabsContent>
+            <TabsContent value='documents'>
+              {tender.documents && tender.documents.length > 0 ? (
+                <div className='space-y-2'>
+                  {tender.documents.map(doc => (
+                    <a
+                      key={doc.id}
+                      href={doc.url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='flex items-center justify-between p-3 bg-[#1a1d23] border border-[#1f2937] rounded hover:border-[#00ff88] transition group'
+                    >
+                      <span className='text-white group-hover:text-[#00ff88]'>
+                        {doc.filename}
+                      </span>
+                      <ExternalLink className='w-4 h-4 text-[#94a3b8]' />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className='text-[#94a3b8]'>No documents available</p>
+              )}
+            </TabsContent>
+            {canInvestigate && (
+              <TabsContent value='investigation'>
+                <p className='text-[#94a3b8]'>
+                  Investigation package coming soon...
+                </p>
+              </TabsContent>
             )}
-          </TabsContent>
-          {/* History tab */}
-          <TabsContent value='history' className='space-y-4'>
-            <div className='space-y-3'>
-              <div className='border-l-2 border-blue-500 pl-4 py-2'>
-                <p className='font-medium text-gray-900'>Tender Posted</p>
-                <p className='text-sm text-gray-600'>
-                  {formatDate(new Date(tender.created_at))}
-                </p>
-              </div>
-              <div className='border-l-2 border-gray-300 pl-4 py-2'>
-                <p className='font-medium text-gray-900'>Last Updated</p>
-                <p className='text-sm text-gray-600'>
-                  {formatDate(new Date(tender.updated_at))}
-                </p>
-              </div>
-              {tender.is_flagged && (
-                <div className='border-l-2 border-red-400 pl-4 py-2'>
-                  <p className='font-medium text-gray-900'>
-                    Flagged for Review
-                  </p>
-                  <p className='text-sm text-gray-600'>Manually flagged</p>
-                </div>
-              )}
-              {tender.award_date && (
-                <div className='border-l-2 border-green-500 pl-4 py-2'>
-                  <p className='font-medium text-gray-900'>Tender Awarded</p>
-                  <p className='text-sm text-gray-600'>
-                    {formatDate(new Date(tender.award_date))}
-                  </p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+          </div>
         </Tabs>
       </Card>
     </div>
