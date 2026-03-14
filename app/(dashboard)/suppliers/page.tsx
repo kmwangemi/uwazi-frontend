@@ -1,241 +1,208 @@
 'use client';
 
-import { NewSupplierDialog } from '@/components/dialogs/NewSupplierDialog';
-import { Pagination } from '@/components/shared/Pagination';
-import { Badge } from '@/components/ui/badge';
+import { RiskBadge } from '@/components/RiskBadge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { exportToCSV } from '@/lib/exportUtils';
-import {
-  AlertCircle,
-  CheckCircle,
-  Download,
-  Eye,
-  Plus,
-  Search,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useSuppliersList } from '@/lib/queries/useSuppliersQueries';
+import { SupplierFilters } from '@/lib/types';
+import { AlertCircle, Eye } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import { useSuppliers } from '@/hooks/queries/useSuppliers';
 
-const ITEMS_PER_PAGE = 9;
+const DEFAULT_FILTERS: SupplierFilters = { page: 1, limit: 20 };
+
+const getRiskLevel = (score: number) => {
+  if (score >= 75) return 'critical';
+  if (score >= 50) return 'high';
+  if (score >= 25) return 'medium';
+  return 'low';
+};
 
 export default function SuppliersPage() {
-  const router = useRouter();
-  const [verificationFilter, setVerificationFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
-  const [newSupplierDialogOpen, setNewSupplierDialogOpen] = useState(false);
-
-  const { data: suppliersData, isLoading } = useSuppliers({
-    page: currentPage,
-    limit: itemsPerPage,
-    verificationFilter: verificationFilter === 'all' ? undefined : verificationFilter,
-    search: searchQuery || undefined,
-  });
-
-  const filteredSuppliers = suppliersData?.data || [];
-  const totalPages = Math.ceil((suppliersData?.meta?.total || 0) / itemsPerPage);
-
-  const getVerificationColor = (status: string) => {
-    const colors: Record<string, string> = {
-      Verified: 'bg-green-100 text-green-800',
-      Pending: 'bg-yellow-100 text-yellow-800',
-      Rejected: 'bg-red-100 text-red-800',
-      Flagged: 'bg-orange-100 text-orange-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getVerificationIcon = (status: string) => {
-    if (status === 'Verified')
-      return <CheckCircle className='h-4 w-4 text-green-600' />;
-    if (status === 'Flagged')
-      return <AlertCircle className='h-4 w-4 text-orange-600' />;
-    return null;
-  };
-
-  const handleExport = () => {
-    const dataToExport = filteredSuppliers.map(s => ({
-      Name: s.name,
-      'Registration Number': s.registration_number,
-      'Tax Number': s.tax_pin || 'N/A',
-      County: s.county,
-      'Year Registered': s.registered_year,
-      'Verification Status': s.verification_status,
-      'Tenders Completed': s.completed_tenders,
-    }));
-    exportToCSV(
-      dataToExport,
-      `suppliers_${new Date().toISOString().split('T')[0]}`,
-    );
-    toast.success('Suppliers exported successfully');
-  };
-
-  const handleNewSupplier = (supplierData: any) => {
-    toast.success('Supplier will be added soon');
-    setNewSupplierDialogOpen(false);
-  };
-
+  const [filters, setFilters] = useState<SupplierFilters>(DEFAULT_FILTERS);
+  const { data, isLoading, error } = useSuppliersList(filters);
+  const suppliers = data?.items ?? [];
+  const totalPages = data?.pages ?? 0;
+  const updateFilters = (patch: Partial<SupplierFilters>) =>
+    setFilters(prev => ({ ...prev, ...patch }));
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>Suppliers</h1>
-          <p className='text-gray-600'>
-            Verify and monitor supplier information
-          </p>
-        </div>
-        <div className='flex gap-3'>
-          <Button variant='outline' size='sm' onClick={handleExport}>
-            <Download className='h-4 w-4 mr-2' />
-            Export
-          </Button>
-          <Button size='sm' onClick={() => setNewSupplierDialogOpen(true)}>
-            <Plus className='h-4 w-4 mr-2' />
-            Add Supplier
-          </Button>
-        </div>
+      {/* Header */}
+      <div>
+        <h1 className='text-3xl font-bold text-white mb-2'>Suppliers</h1>
+        <p className='text-[#94a3b8]'>
+          Analyze supplier risk profiles and history
+        </p>
       </div>
-
-      <NewSupplierDialog
-        open={newSupplierDialogOpen}
-        onOpenChange={setNewSupplierDialogOpen}
-        onSubmit={handleNewSupplier}
-      />
-
-      <div className='bg-white rounded-lg border border-gray-200 p-4 space-y-6'>
-        <div className='flex gap-4 flex-wrap items-center'>
-          <div className='flex-1 min-w-72 relative'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
-            <Input
-              placeholder='Search by name, registration number, or county...'
-              value={searchQuery}
-              onChange={e => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className='pl-10'
-            />
-          </div>
-
-          <Select
-            value={verificationFilter}
-            onValueChange={value => {
-              setVerificationFilter(value);
-              setCurrentPage(1);
-            }}
+      {/* Filters */}
+      <Card className='bg-[#121418] border-[#1f2937] p-4'>
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+          <Input
+            placeholder='County...'
+            value={filters.county || ''}
+            onChange={e => updateFilters({ county: e.target.value, page: 1 })}
+            className='bg-[#1a1d23] border-[#1f2937] text-white placeholder-[#64748b]'
+          />
+          <Input
+            placeholder='Risk level...'
+            value={filters.risk_level || ''}
+            onChange={e =>
+              updateFilters({ risk_level: e.target.value, page: 1 })
+            }
+            className='bg-[#1a1d23] border-[#1f2937] text-white placeholder-[#64748b]'
+          />
+          <Button
+            variant='outline'
+            size='sm'
+            className='border-[#1f2937] text-[#94a3b8]'
+            onClick={() => setFilters(DEFAULT_FILTERS)}
           >
-            <SelectTrigger className='w-40'>
-              <SelectValue placeholder='Filter by status' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All Statuses</SelectItem>
-              <SelectItem value='Verified'>Verified</SelectItem>
-              <SelectItem value='Pending'>Pending</SelectItem>
-              <SelectItem value='Flagged'>Flagged</SelectItem>
-              <SelectItem value='Rejected'>Rejected</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div className='ml-auto text-sm text-gray-600'>
-            {filteredSuppliers.length} supplier
-            {filteredSuppliers.length !== 1 ? 's' : ''}
+            Clear Filters
+          </Button>
+        </div>
+      </Card>
+      {/* Error */}
+      {error && (
+        <Card className='bg-[#121418] border-[#ef4444]/30 p-4'>
+          <div className='flex gap-3'>
+            <AlertCircle className='w-5 h-5 text-[#ef4444] shrink-0' />
+            <p className='text-[#ef4444]'>
+              {error instanceof Error
+                ? error.message
+                : 'Failed to fetch suppliers'}
+            </p>
           </div>
-        </div>
-
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {isLoading ? (
-            <div className='col-span-1 md:col-span-2 lg:col-span-3 py-8 text-center text-gray-500'>
-              Loading suppliers...
-            </div>
-          ) : filteredSuppliers.length === 0 ? (
-            <div className='col-span-1 md:col-span-2 lg:col-span-3 py-8 text-center text-gray-500'>
-              No suppliers found matching your criteria.
-            </div>
-          ) : (
-            filteredSuppliers.map(supplier => (
-              <div
-                key={supplier.id}
-                className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer'
-                onClick={() => router.push(`/suppliers/${supplier.id}`)}
-              >
-                <div className='space-y-3'>
-                  <div className='flex items-start justify-between gap-2'>
-                    <div>
-                      <h3 className='font-semibold text-gray-900'>
-                        {supplier.name}
-                      </h3>
-                      <p className='text-sm text-gray-600'>
-                        {supplier.registration_number}
-                      </p>
-                    </div>
-                    <Badge
-                      className={getVerificationColor(
-                        supplier.verification_status,
-                      )}
-                    >
-                      {supplier.verification_status}
-                    </Badge>
-                  </div>
-
-                  <div className='space-y-1 text-sm'>
-                    <div className='flex items-center gap-2'>
-                      <span className='text-gray-600'>Location:</span>
-                      <span className='font-medium text-gray-900'>
-                        {supplier.county}
-                      </span>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                      <span className='text-gray-600'>Year Registered:</span>
-                      <span className='font-medium text-gray-900'>
-                        {supplier.registered_year}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className='pt-3 border-t border-gray-100'>
-                    <div className='flex items-center justify-between'>
-                      <div className='flex items-center gap-1'>
-                        {getVerificationIcon(supplier.verification_status)}
-                        <span className='text-xs text-gray-600'>
-                          {supplier.completed_tenders} tenders completed
-                        </span>
-                      </div>
-                      <Button
-                        variant='ghost'
+        </Card>
+      )}
+      {/* Table */}
+      <Card className='bg-[#121418] border-[#1f2937] overflow-hidden'>
+        <div className='overflow-x-auto'>
+          <Table>
+            <TableHeader>
+              <TableRow className='border-[#1f2937] hover:bg-transparent'>
+                <TableHead className='text-[#94a3b8]'>Name</TableHead>
+                <TableHead className='text-[#94a3b8]'>Registration #</TableHead>
+                <TableHead className='text-[#94a3b8]'>County</TableHead>
+                <TableHead className='text-[#94a3b8]'>Age (days)</TableHead>
+                <TableHead className='text-[#94a3b8]'>Directors</TableHead>
+                <TableHead className='text-[#94a3b8]'>Risk Score</TableHead>
+                <TableHead className='text-[#94a3b8]'>Ghost %</TableHead>
+                <TableHead className='w-10' />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    {[...Array(8)].map((_, j) => (
+                      <TableCell key={j}>
+                        <Skeleton
+                          className={
+                            j === 5 ? 'h-6 w-20' : j === 7 ? 'h-8 w-8' : 'h-4'
+                          }
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : suppliers.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className='text-center py-8 text-[#94a3b8]'
+                  >
+                    No suppliers found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                suppliers.map(supplier => (
+                  <TableRow
+                    key={supplier.id}
+                    className='border-[#1f2937] hover:bg-[#1a1d23]'
+                  >
+                    <TableCell className='text-white'>
+                      {supplier.name}
+                    </TableCell>
+                    <TableCell className='font-mono text-sm text-[#94a3b8]'>
+                      {supplier.registration_number}
+                    </TableCell>
+                    <TableCell className='text-[#94a3b8]'>
+                      {supplier.county}
+                    </TableCell>
+                    <TableCell className='text-white'>
+                      {supplier.company_age_days}
+                    </TableCell>
+                    <TableCell className='text-white'>
+                      {supplier.directors.length}
+                    </TableCell>
+                    <TableCell>
+                      <RiskBadge
+                        level={getRiskLevel(supplier.risk_score)}
+                        score={Math.round(supplier.risk_score)}
                         size='sm'
-                        onClick={e => {
-                          e.stopPropagation();
-                          router.push(`/suppliers/${supplier.id}`);
-                        }}
-                      >
-                        <Eye className='h-4 w-4' />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )))}
+                      />
+                    </TableCell>
+                    <TableCell className='text-[#f59e0b]'>
+                      {supplier.ghost_probability
+                        ? `${(supplier.ghost_probability * 100).toFixed(0)}%`
+                        : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <Link href={`/suppliers/${supplier.id}`}>
+                        <Button size='icon' variant='ghost' className='h-8 w-8'>
+                          <Eye className='w-4 h-4' />
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
-
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
-      </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className='border-t border-[#1f2937] p-4 flex justify-center gap-2'>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() =>
+                updateFilters({ page: Math.max(1, (filters.page || 1) - 1) })
+              }
+              disabled={(filters.page || 1) === 1}
+              className='border-[#1f2937]'
+            >
+              Previous
+            </Button>
+            <span className='flex items-center text-sm text-[#94a3b8]'>
+              Page {filters.page || 1} of {totalPages}
+            </span>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() =>
+                updateFilters({
+                  page: Math.min(totalPages, (filters.page || 1) + 1),
+                })
+              }
+              disabled={(filters.page || 1) === totalPages}
+              className='border-[#1f2937]'
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

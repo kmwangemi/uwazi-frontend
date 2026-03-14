@@ -1,308 +1,190 @@
 'use client';
 
+import { CountyAnalysis } from '@/components/analytics/CountyAnalysis';
+import { RiskDistribution } from '@/components/analytics/RiskDistribution';
+import { SpendingTrend } from '@/components/analytics/SpendingTrend';
+import { TrendChart } from '@/components/dashboard/TrendChart';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatCurrency } from '@/lib/formatters';
-import { mockTenders } from '@/lib/mockData';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Download } from 'lucide-react';
+import { useState } from 'react';
 
 export default function AnalyticsPage() {
-  // Risk distribution
-  const riskDistribution = [
+  const [timeRange, setTimeRange] = useState('6m');
+  const [county, setCounty] = useState('all');
+
+  const stats = [
     {
-      name: 'Low Risk (0-39)',
-      value: mockTenders.filter(t => t.risk_score < 40).length,
-      fill: '#10B981',
+      label: 'Total Procurement Value',
+      value: 'KES 2.4B',
+      delta: '+12.5%',
+      trend: 'up',
     },
     {
-      name: 'Medium Risk (40-69)',
-      value: mockTenders.filter(t => t.risk_score >= 40 && t.risk_score < 70)
-        .length,
-      fill: '#F59E0B',
+      label: 'Flagged Tenders',
+      value: '128',
+      delta: '+8.3%',
+      trend: 'up',
     },
     {
-      name: 'High Risk (70+)',
-      value: mockTenders.filter(t => t.risk_score >= 70).length,
-      fill: '#EF4444',
+      label: 'Savings Identified',
+      value: 'KES 340M',
+      delta: '+5.2%',
+      trend: 'up',
     },
-  ];
-
-  // Spending by category
-  const spendingByCategory = mockTenders
-    .reduce(
-      (acc, t) => {
-        const existing = acc.find(item => item.category === t.category);
-        if (existing) {
-          existing.amount += t.amount;
-        } else {
-          acc.push({ category: t.category, amount: t.amount });
-        }
-        return acc;
-      },
-      [] as Array<{ category: string; amount: number }>,
-    )
-    .sort((a, b) => b.amount - a.amount);
-
-  // Monthly trends
-  const monthlyData = [
-    { month: 'Jan', amount: 2500000, risk: 35 },
-    { month: 'Feb', amount: 2800000, risk: 38 },
-    { month: 'Mar', amount: 3200000, risk: 42 },
-    { month: 'Apr', amount: 2900000, risk: 39 },
-    { month: 'May', amount: 3500000, risk: 45 },
-    { month: 'Jun', amount: 5200000, risk: 52 },
-  ];
-
-  // Tender timeline
-  const tenderTimeline = [
-    { week: 'Week 1', count: 5, approved: 3 },
-    { week: 'Week 2', count: 8, approved: 5 },
-    { week: 'Week 3', count: 6, approved: 4 },
-    { week: 'Week 4', count: 9, approved: 6 },
-    { week: 'Week 5', count: 7, approved: 5 },
-    { week: 'Week 6', count: 10, approved: 7 },
+    {
+      label: 'Avg Risk Score',
+      value: '56.2',
+      delta: '-3.1%',
+      trend: 'down',
+    },
   ];
 
   return (
     <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold tracking-tight'>
-          Analytics & Insights
-        </h1>
-        <p className='text-gray-600'>
-          Advanced analytics and procurement patterns
-        </p>
+      {/* Header */}
+      <div className='flex justify-between items-start'>
+        <div>
+          <h1 className='text-3xl font-bold text-white mb-2'>
+            Analytics & Reports
+          </h1>
+          <p className='text-[#94a3b8]'>
+            Comprehensive procurement intelligence and trend analysis
+          </p>
+        </div>
+        <Button className='bg-[#00ff88] text-black hover:bg-[#00ff88]/90'>
+          <Download className='w-4 h-4 mr-2' />
+          Export Report
+        </Button>
       </div>
-
-      <Tabs defaultValue='overview' className='space-y-4'>
-        <TabsList>
-          <TabsTrigger value='overview'>Overview</TabsTrigger>
-          <TabsTrigger value='spending'>Spending Analysis</TabsTrigger>
-          <TabsTrigger value='risk'>Risk Analysis</TabsTrigger>
-          <TabsTrigger value='trends'>Trends</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value='overview' className='space-y-4'>
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-            <Card className='p-6'>
-              <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-                Risk Distribution
-              </h3>
-              <ResponsiveContainer width='100%' height={300}>
-                <PieChart>
-                  <Pie
-                    data={riskDistribution}
-                    cx='50%'
-                    cy='50%'
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    outerRadius={80}
-                    fill='#8884d8'
-                    dataKey='value'
-                  >
-                    {riskDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </Card>
-
-            <Card className='p-6'>
-              <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-                Tender Submissions
-              </h3>
-              <ResponsiveContainer width='100%' height={300}>
-                <BarChart data={tenderTimeline}>
-                  <CartesianGrid strokeDasharray='3 3' />
-                  <XAxis dataKey='week' />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey='count' fill='#2563EB' name='Total Submitted' />
-                  <Bar dataKey='approved' fill='#10B981' name='Approved' />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
+      {/* Filters */}
+      <Card className='bg-[#121418] border-[#1f2937] p-4'>
+        <div className='flex gap-4'>
+          <div className='flex-1'>
+            <label className='block text-sm text-[#94a3b8] mb-2'>
+              Time Range
+            </label>
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className='bg-[#1a1d23] border-[#1f2937]'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className='bg-[#121418] border-[#1f2937]'>
+                <SelectItem value='1m'>Last Month</SelectItem>
+                <SelectItem value='3m'>Last 3 Months</SelectItem>
+                <SelectItem value='6m'>Last 6 Months</SelectItem>
+                <SelectItem value='1y'>Last Year</SelectItem>
+                <SelectItem value='all'>All Time</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </TabsContent>
-
-        <TabsContent value='spending' className='space-y-4'>
-          <Card className='p-6'>
-            <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-              Spending by Category
-            </h3>
-            <ResponsiveContainer width='100%' height={400}>
-              <BarChart
-                data={spendingByCategory}
-                layout='vertical'
-                margin={{ top: 5, right: 30, left: 200, bottom: 5 }}
+          <div className='flex-1'>
+            <label className='block text-sm text-[#94a3b8] mb-2'>County</label>
+            <Select value={county} onValueChange={setCounty}>
+              <SelectTrigger className='bg-[#1a1d23] border-[#1f2937]'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className='bg-[#121418] border-[#1f2937]'>
+                <SelectItem value='all'>All Counties</SelectItem>
+                <SelectItem value='nairobi'>Nairobi</SelectItem>
+                <SelectItem value='kisumu'>Kisumu</SelectItem>
+                <SelectItem value='mombasa'>Mombasa</SelectItem>
+                <SelectItem value='nakuru'>Nakuru</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+      {/* KPIs */}
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+        {stats.map((stat, idx) => (
+          <Card key={idx} className='bg-[#121418] border-[#1f2937] p-6'>
+            <p className='text-sm text-[#94a3b8] mb-2'>{stat.label}</p>
+            <div className='flex justify-between items-end'>
+              <p className='text-2xl font-mono font-bold text-white'>
+                {stat.value}
+              </p>
+              <p
+                className={`text-sm font-semibold ${stat.trend === 'up' ? 'text-[#ef4444]' : 'text-[#00ff88]'}`}
               >
-                <CartesianGrid strokeDasharray='3 3' />
-                <XAxis
-                  type='number'
-                  tickFormatter={value => formatCurrency(value)}
-                />
-                <YAxis dataKey='category' type='category' width={190} />
-                <Tooltip formatter={value => formatCurrency(value as number)} />
-                <Bar dataKey='amount' fill='#10B981' />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card className='p-6'>
-            <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-              Top Categories by Amount
-            </h3>
-            <div className='space-y-3'>
-              {spendingByCategory.slice(0, 5).map((item, idx) => (
-                <div key={idx} className='flex items-center justify-between'>
-                  <div className='flex-1'>
-                    <p className='font-medium text-gray-900'>{item.category}</p>
-                    <div className='w-full bg-gray-200 rounded-full h-2 mt-1'>
-                      <div
-                        className='bg-blue-600 h-2 rounded-full'
-                        style={{
-                          width: `${(item.amount / spendingByCategory[0].amount) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <span className='ml-4 font-semibold text-gray-900 min-w-fit'>
-                    {formatCurrency(item.amount)}
-                  </span>
-                </div>
-              ))}
+                {stat.delta}
+              </p>
             </div>
           </Card>
-        </TabsContent>
-
-        <TabsContent value='risk' className='space-y-4'>
-          <Card className='p-6'>
-            <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-              Risk Score vs Budget Amount
-            </h3>
-            <ResponsiveContainer width='100%' height={400}>
-              <ScatterChart
-                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-              >
-                <CartesianGrid strokeDasharray='3 3' />
-                <XAxis
-                  dataKey='amount'
-                  name='Budget Amount'
-                  tickFormatter={value => formatCurrency(value)}
-                />
-                <YAxis dataKey='risk_score' name='Risk Score' type='number' />
-                <Tooltip
-                  cursor={{ strokeDasharray: '3 3' }}
-                  formatter={value =>
-                    typeof value === 'number'
-                      ? value > 1000000
-                        ? formatCurrency(value)
-                        : value.toFixed(0)
-                      : value
-                  }
-                />
-                <Scatter name='Tenders' data={mockTenders} fill='#FF6B6B' />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-            <Card className='p-4'>
-              <p className='text-sm text-gray-600'>Average Risk Score</p>
-              <p className='text-3xl font-bold mt-2 text-gray-900'>
-                {(
-                  mockTenders.reduce((sum, t) => sum + t.risk_score, 0) /
-                  mockTenders.length
-                ).toFixed(0)}
-              </p>
-            </Card>
-            <Card className='p-4'>
-              <p className='text-sm text-gray-600'>High Risk Tenders</p>
-              <p className='text-3xl font-bold mt-2 text-red-600'>
-                {mockTenders.filter(t => t.risk_score >= 70).length}
-              </p>
-            </Card>
-            <Card className='p-4'>
-              <p className='text-sm text-gray-600'>Risk Coverage</p>
-              <p className='text-3xl font-bold mt-2 text-blue-600'>100%</p>
-            </Card>
+        ))}
+      </div>
+      {/* Charts */}
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        {/* Spending Trend */}
+        <Card className='bg-[#121418] border-[#1f2937] p-6'>
+          <h2 className='text-lg font-semibold text-white mb-4'>
+            Spending Trends
+          </h2>
+          <SpendingTrend />
+        </Card>
+        {/* Risk Distribution */}
+        <Card className='bg-[#121418] border-[#1f2937] p-6'>
+          <h2 className='text-lg font-semibold text-white mb-4'>
+            Risk Distribution
+          </h2>
+          <RiskDistribution />
+        </Card>
+        {/* County Analysis */}
+        <Card className='bg-[#121418] border-[#1f2937] p-6 lg:col-span-2'>
+          <h2 className='text-lg font-semibold text-white mb-4'>
+            County Performance
+          </h2>
+          <CountyAnalysis />
+        </Card>
+        {/* Monthly Trend */}
+        <Card className='bg-[#121418] border-[#1f2937] p-6 lg:col-span-2'>
+          <h2 className='text-lg font-semibold text-white mb-4'>
+            Monthly Risk Score Trend
+          </h2>
+          <TrendChart />
+        </Card>
+      </div>
+      {/* Key Findings */}
+      <Card className='bg-[#121418] border-[#1f2937] p-6'>
+        <h2 className='text-lg font-semibold text-white mb-4'>Key Findings</h2>
+        <div className='space-y-3'>
+          <div className='flex gap-3'>
+            <div className='w-2 h-2 bg-[#00ff88] rounded-full mt-2 shrink-0'></div>
+            <p className='text-white'>
+              <span className='font-semibold'>Price inflation detected</span> in
+              34 tenders across health sector, averaging 28% above benchmark
+            </p>
           </div>
-        </TabsContent>
-
-        <TabsContent value='trends' className='space-y-4'>
-          <Card className='p-6'>
-            <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-              Monthly Spending & Risk Trend
-            </h3>
-            <ResponsiveContainer width='100%' height={400}>
-              <LineChart
-                data={monthlyData}
-                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray='3 3' />
-                <XAxis dataKey='month' />
-                <YAxis
-                  yAxisId='left'
-                  tickFormatter={value => formatCurrency(value)}
-                />
-                <YAxis yAxisId='right' orientation='right' />
-                <Tooltip />
-                <Legend />
-                <Line
-                  yAxisId='left'
-                  type='monotone'
-                  dataKey='amount'
-                  stroke='#2563EB'
-                  name='Spending'
-                />
-                <Line
-                  yAxisId='right'
-                  type='monotone'
-                  dataKey='risk'
-                  stroke='#EF4444'
-                  name='Avg Risk Score'
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <Card className='p-4'>
-              <p className='text-sm text-gray-600'>Total Procurement Value</p>
-              <p className='text-2xl font-bold mt-2 text-gray-900'>
-                {formatCurrency(
-                  mockTenders.reduce((sum, t) => sum + t.amount, 0),
-                )}
-              </p>
-              <p className='text-xs text-gray-500 mt-1'>Last 6 months</p>
-            </Card>
-            <Card className='p-4'>
-              <p className='text-sm text-gray-600'>Growth Rate</p>
-              <p className='text-2xl font-bold mt-2 text-green-600'>+12.5%</p>
-              <p className='text-xs text-gray-500 mt-1'>Month over month</p>
-            </Card>
+          <div className='flex gap-3'>
+            <div className='w-2 h-2 bg-[#f59e0b] rounded-full mt-2 shrink-0'></div>
+            <p className='text-white'>
+              <span className='font-semibold'>Supplier concentration</span>{' '}
+              rising in construction sector - top 5 suppliers awarded 42% of
+              contracts
+            </p>
           </div>
-        </TabsContent>
-      </Tabs>
+          <div className='flex gap-3'>
+            <div className='w-2 h-2 bg-[#ef4444] rounded-full mt-2 shrink-0'></div>
+            <p className='text-white'>
+              <span className='font-semibold'>Specification manipulation</span>{' '}
+              patterns identified in 12 tenders across county governments
+            </p>
+          </div>
+          <div className='flex gap-3'>
+            <div className='w-2 h-2 bg-[#64748b] rounded-full mt-2 shrink-0'></div>
+            <p className='text-white'>
+              <span className='font-semibold'>Ghost companies</span> suspected
+              in 8 tender submissions - entities with no verifiable operations
+            </p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

@@ -1,269 +1,222 @@
 'use client';
 
-import { NewTenderDialog } from '@/components/dialogs/NewTenderDialog';
-import { Pagination } from '@/components/shared/Pagination';
-import { RiskScoreMeter } from '@/components/shared/RiskScoreMeter';
-import { Badge } from '@/components/ui/badge';
+import { RiskBadge } from '@/components/RiskBadge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { exportToCSV } from '@/lib/exportUtils';
-import { formatCurrency, formatDate } from '@/lib/formatters';
-import { useCreateTender, useTenders } from '@/hooks/queries/useTenders';
-import { Download, Eye, Plus, Search } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useTendersList } from '@/lib/queries/useTendersQueries';
+import { TenderFilters } from '@/lib/types';
+import { formatKES, truncate } from '@/lib/utils';
+import { AlertCircle, Download, Eye, Zap } from 'lucide-react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import type { TenderCreatePayload } from '@/types/tender';
 
-const ITEMS_PER_PAGE = 10;
+const DEFAULT_FILTERS: TenderFilters = { page: 1, limit: 20 };
 
 export default function TendersPage() {
-  const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [riskFilter, setRiskFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
-  const [newTenderDialogOpen, setNewTenderDialogOpen] = useState(false);
-
-  const { data: tendersData, isLoading } = useTenders({
-    page: currentPage,
-    limit: itemsPerPage,
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    risk_level: riskFilter === 'all' ? undefined : riskFilter,
-    search: searchQuery || undefined,
-  });
-
-  const { mutate: createTender, isPending: isCreating } = useCreateTender();
-
-  const tenders = tendersData?.data || [];
-  const totalPages = Math.ceil((tendersData?.meta?.total || 0) / itemsPerPage);
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      published: 'bg-green-100 text-green-800',
-      awarded: 'bg-blue-100 text-blue-800',
-      cancelled: 'bg-gray-100 text-gray-800',
-    };
-    return colors[status] ?? 'bg-gray-100 text-gray-800';
-  };
-
-  const handleExport = () => {
-    const dataToExport = tenders.map(t => ({
-      Reference: t.tender_number,
-      Title: t.title,
-      Amount: formatCurrency(t.amount),
-      Status: t.status,
-      'Risk Score': t.risk_score,
-      Deadline: t.deadline ? formatDate(new Date(t.deadline)) : 'N/A',
-      Entity: t.entity_name,
-      County: t.county,
-    }));
-    exportToCSV(
-      dataToExport,
-      `tenders_${new Date().toISOString().split('T')[0]}`,
-    );
-    toast.success('Tenders exported successfully');
-  };
-
-  const handleNewTender = (tenderData: TenderCreatePayload) => {
-    createTender(tenderData, {
-      onSuccess: () => {
-        toast.success('Tender created successfully');
-        setNewTenderDialogOpen(false);
-      },
-      onError: () => {
-        toast.error('Failed to create tender');
-      },
-    });
-  };
-
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<TenderFilters>(() => ({
+    ...DEFAULT_FILTERS,
+    // Hydrate risk_level from URL on first render
+    risk_level: searchParams.get('risk_level') ?? undefined,
+  }));
+  const { data, isLoading, error } = useTendersList(filters);
+  const tenders = data?.items ?? [];
+  const totalPages = data?.pages ?? 0;
+  const updateFilters = (patch: Partial<TenderFilters>) =>
+    setFilters(prev => ({ ...prev, ...patch }));
   return (
     <div className='space-y-6'>
       {/* Header */}
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>Tenders</h1>
-          <p className='text-gray-600'>
-            Manage and monitor all procurement tenders
-          </p>
-        </div>
-        <div className='flex gap-3'>
-          <Button variant='outline' size='sm' onClick={handleExport}>
-            <Download className='h-4 w-4 mr-2' />
-            Export
-          </Button>
-          <Button size='sm' onClick={() => setNewTenderDialogOpen(true)}>
-            <Plus className='h-4 w-4 mr-2' />
-            New Tender
-          </Button>
-        </div>
+      <div>
+        <h1 className='text-3xl font-bold text-white mb-2'>Tenders</h1>
+        <p className='text-[#94a3b8]'>
+          Browse and analyze all procurement tenders
+        </p>
       </div>
-      <NewTenderDialog
-        open={newTenderDialogOpen}
-        onOpenChange={setNewTenderDialogOpen}
-        onSubmit={handleNewTender}
-        isSubmitting={isCreating}
-      />
-      <div className='bg-white rounded-lg border border-gray-200 p-4 space-y-6'>
-        {/* Filters */}
-        <div className='flex gap-4 flex-wrap items-center'>
-          <div className='flex-1 min-w-72 relative'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
-            <Input
-              placeholder='Search by reference, title, or entity...'
-              value={searchQuery}
-              onChange={e => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className='pl-10'
-            />
-          </div>
-          <Select
-            value={statusFilter}
-            onValueChange={value => {
-              setStatusFilter(value);
-              setCurrentPage(1);
-            }}
+      {/* Filters */}
+      <Card className='bg-[#121418] border-[#1f2937] p-4'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3'>
+          <Input
+            placeholder='Search tenders...'
+            value={filters.search || ''}
+            onChange={e => updateFilters({ search: e.target.value, page: 1 })}
+            className='bg-[#1a1d23] border-[#1f2937] text-white placeholder-[#64748b]'
+          />
+          <Input
+            placeholder='County...'
+            value={filters.county || ''}
+            onChange={e => updateFilters({ county: e.target.value, page: 1 })}
+            className='bg-[#1a1d23] border-[#1f2937] text-white placeholder-[#64748b]'
+          />
+          <Input
+            placeholder='Category...'
+            value={filters.category || ''}
+            onChange={e => updateFilters({ category: e.target.value, page: 1 })}
+            className='bg-[#1a1d23] border-[#1f2937] text-white placeholder-[#64748b]'
+          />
+          <Button
+            variant='outline'
+            size='sm'
+            className='border-[#1f2937] text-[#94a3b8]'
+            onClick={() => setFilters(DEFAULT_FILTERS)}
           >
-            <SelectTrigger className='w-40'>
-              <SelectValue placeholder='Filter by status' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All Statuses</SelectItem>
-              <SelectItem value='published'>Published</SelectItem>
-              <SelectItem value='awarded'>Awarded</SelectItem>
-              <SelectItem value='cancelled'>Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={riskFilter}
-            onValueChange={value => {
-              setRiskFilter(value);
-              setCurrentPage(1);
-            }}
+            Clear Filters
+          </Button>
+          <Button
+            size='sm'
+            className='bg-[#00ff88] text-black hover:bg-[#00ff88]/90'
           >
-            <SelectTrigger className='w-40'>
-              <SelectValue placeholder='Filter by risk' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All Risk Levels</SelectItem>
-              <SelectItem value='LOW'>Low</SelectItem>
-              <SelectItem value='MEDIUM'>Medium</SelectItem>
-              <SelectItem value='HIGH'>High</SelectItem>
-              <SelectItem value='CRITICAL'>Critical</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className='ml-auto text-sm text-gray-600'>
-            {tenders.length} tender{tenders.length !== 1 ? 's' : ''}
-          </div>
+            <Download className='w-4 h-4 mr-2' /> Export
+          </Button>
+          <Button
+            size='sm'
+            className='bg-[#f59e0b] text-black hover:bg-[#f59e0b]/90'
+          >
+            <Zap className='w-4 h-4 mr-2' /> Analyze
+          </Button>
         </div>
-        {/* Table */}
+      </Card>
+      {/* Error */}
+      {error && (
+        <Card className='bg-[#121418] border-[#ef4444]/30 p-4'>
+          <div className='flex gap-3'>
+            <AlertCircle className='w-5 h-5 text-[#ef4444] shrink-0 mt-0.5' />
+            <p className='text-[#ef4444]'>
+              {error instanceof Error
+                ? error.message
+                : 'Failed to fetch tenders'}
+            </p>
+          </div>
+        </Card>
+      )}
+      {/* Table */}
+      <Card className='bg-[#121418] border-[#1f2937] overflow-hidden'>
         <div className='overflow-x-auto'>
-          <table className='w-full text-sm'>
-            <thead>
-              <tr className='border-b border-gray-200'>
-                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
-                  Reference
-                </th>
-                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
-                  Title
-                </th>
-                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
-                  Entity
-                </th>
-                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
-                  Amount
-                </th>
-                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
-                  Status
-                </th>
-                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
-                  Risk
-                </th>
-                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
-                  Deadline
-                </th>
-                <th className='text-left py-3 px-4 font-semibold text-gray-900'>
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className='border-[#1f2937] hover:bg-transparent'>
+                <TableHead className='text-[#94a3b8]'>Reference</TableHead>
+                <TableHead className='text-[#94a3b8]'>Title</TableHead>
+                <TableHead className='text-[#94a3b8]'>Entity</TableHead>
+                <TableHead className='text-[#94a3b8]'>Value</TableHead>
+                <TableHead className='text-[#94a3b8]'>Risk</TableHead>
+                <TableHead className='text-[#94a3b8]'>County</TableHead>
+                <TableHead className='w-10' />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {isLoading ? (
-                <tr>
-                  <td colSpan={8} className='py-8 text-center text-gray-500'>
-                    Loading tenders...
-                  </td>
-                </tr>
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    {[...Array(7)].map((_, j) => (
+                      <TableCell key={j}>
+                        <Skeleton
+                          className={
+                            j === 4 ? 'h-6 w-20' : j === 6 ? 'h-8 w-8' : 'h-4'
+                          }
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
               ) : tenders.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className='py-8 text-center text-gray-500'>
-                    No tenders found matching your criteria.
-                  </td>
-                </tr>
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className='text-center py-8 text-[#94a3b8]'
+                  >
+                    No tenders found
+                  </TableCell>
+                </TableRow>
               ) : (
                 tenders.map(tender => (
-                  <tr
+                  <TableRow
                     key={tender.id}
-                    className='border-b border-gray-100 hover:bg-gray-50'
+                    className='border-[#1f2937] hover:bg-[#1a1d23]'
                   >
-                    <td className='py-3 px-4 text-gray-900 font-medium'>
-                      {tender.tender_number}
-                    </td>
-                    <td className='py-3 px-4 text-gray-700 max-w-xs truncate'>
-                      {tender.title}
-                    </td>
-                    <td className='py-3 px-4 text-gray-600 max-w-xs truncate'>
-                      {tender.entity_name}
-                    </td>
-                    <td className='py-3 px-4 text-gray-900 font-medium'>
-                      {formatCurrency(tender.amount)}
-                    </td>
-                    <td className='py-3 px-4'>
-                      <Badge className={getStatusColor(tender.status)}>
-                        {tender.status}
-                      </Badge>
-                    </td>
-                    <td className='py-3 px-4'>
-                      <RiskScoreMeter score={tender.risk_score} />
-                    </td>
-                    <td className='py-3 px-4 text-gray-600'>
-                      {tender.deadline
-                        ? formatDate(new Date(tender.deadline))
-                        : 'N/A'}
-                    </td>
-                    <td className='py-3 px-4'>
-                      <Button
-                        variant='ghost'
-                        size='sm'
-                        onClick={() => router.push(`/tenders/${tender.id}`)}
-                      >
-                        <Eye className='h-4 w-4' />
-                      </Button>
-                    </td>
-                  </tr>
+                    <TableCell className='font-mono text-sm text-[#00ff88]'>
+                      {truncate(tender.reference_number, 12)}
+                    </TableCell>
+                    <TableCell className='text-white text-sm max-w-xs'>
+                      <span className='line-clamp-1'>
+                        {truncate(tender.title, 30)}
+                      </span>
+                    </TableCell>
+                    <TableCell className='text-[#94a3b8] text-sm'>
+                      {truncate(tender.entity.name, 20)}
+                    </TableCell>
+                    <TableCell className='text-white font-mono text-sm'>
+                      {formatKES(tender.estimated_value)}
+                    </TableCell>
+                    <TableCell>
+                      {tender.risk_score && (
+                        <RiskBadge
+                          level={tender.risk_score.risk_level}
+                          score={tender.risk_score.total_score}
+                          size='sm'
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className='text-[#94a3b8] text-sm'>
+                      {tender.county}
+                    </TableCell>
+                    <TableCell>
+                      <Link href={`/tenders/${tender.id}`}>
+                        <Button size='icon' variant='ghost' className='h-8 w-8'>
+                          <Eye className='w-4 h-4' />
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
-      </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className='border-t border-[#1f2937] p-4 flex justify-center gap-2'>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() =>
+                updateFilters({ page: Math.max(1, (filters.page || 1) - 1) })
+              }
+              disabled={(filters.page || 1) === 1}
+              className='border-[#1f2937]'
+            >
+              Previous
+            </Button>
+            <span className='flex items-center text-sm text-[#94a3b8]'>
+              Page {filters.page || 1} of {totalPages}
+            </span>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() =>
+                updateFilters({
+                  page: Math.min(totalPages, (filters.page || 1) + 1),
+                })
+              }
+              disabled={(filters.page || 1) === totalPages}
+              className='border-[#1f2937]'
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

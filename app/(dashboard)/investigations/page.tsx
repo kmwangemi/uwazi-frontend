@@ -1,282 +1,184 @@
-'use client';
+'use client'
 
-import { NewInvestigationDialog } from '@/components/dialogs/NewInvestigationDialog';
-import { Pagination } from '@/components/shared/Pagination';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { mockPublicReports } from '@/lib/mockData';
-import {
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Eye,
-  Plus,
-  Search,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { useInvestigations, useCreateInvestigation } from '@/hooks/queries/useInvestigations';
+import { useState } from 'react'
+import { Card } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { RiskBadge } from '@/components/RiskBadge'
+import { FileText, MessageSquare, Download } from 'lucide-react'
 
-const ITEMS_PER_PAGE = 6;
+const sampleInvestigations = [
+  {
+    id: '1',
+    tender_ref: 'KCAC/2026/001',
+    title: 'Supply and delivery of office equipment',
+    risk_level: 'critical',
+    status: 'active',
+    opened: '2026-03-01',
+    investigator: 'John Doe',
+    findings: 'Suspicious bid patterns detected. Supplier linked to 5 other shell companies.',
+  },
+  {
+    id: '2',
+    tender_ref: 'KCAC/2026/002',
+    title: 'Construction of rural health facilities',
+    risk_level: 'high',
+    status: 'active',
+    opened: '2026-02-15',
+    investigator: 'Jane Smith',
+    findings: 'Price deviation of 40% above benchmark. Specification manipulation indicators.',
+  },
+]
+
+const sampleWhistleblowerReports = [
+  {
+    id: '1',
+    date: '2026-03-12',
+    allegation: 'Ghost supplier',
+    credibility: 87,
+    urgency: 'high',
+    summary: 'Supplier appears to be shell company with no actual operations',
+    reviewed: true,
+  },
+  {
+    id: '2',
+    date: '2026-03-10',
+    allegation: 'Bid rigging',
+    credibility: 72,
+    urgency: 'medium',
+    summary: 'Multiple bids show identical pricing patterns',
+    reviewed: true,
+  },
+]
 
 export default function InvestigationsPage() {
-  const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
-  const [newInvestigationDialogOpen, setNewInvestigationDialogOpen] =
-    useState(false);
-
-  const { data: investigationsData, isLoading } = useInvestigations({
-    page: currentPage,
-    limit: itemsPerPage,
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    priority: priorityFilter === 'all' ? undefined : priorityFilter,
-    search: searchQuery || undefined,
-  });
-
-  const { mutate: createInvestigation } = useCreateInvestigation();
-
-  const filteredInvestigations = investigationsData?.data || [];
-  const totalPages = Math.ceil((investigationsData?.meta?.total || 0) / itemsPerPage);
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      Open: 'bg-blue-100 text-blue-800',
-      'In Progress': 'bg-yellow-100 text-yellow-800',
-      Closed: 'bg-gray-100 text-gray-800',
-      Resolved: 'bg-green-100 text-green-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getPriorityColor = (priority: string) => {
-    const colors: Record<string, string> = {
-      High: 'bg-red-100 text-red-800',
-      Medium: 'bg-orange-100 text-orange-800',
-      Low: 'bg-green-100 text-green-800',
-    };
-    return colors[priority] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusIcon = (status: string) => {
-    if (status === 'Open')
-      return <AlertCircle className='h-4 w-4 text-blue-600' />;
-    if (status === 'In Progress')
-      return <Clock className='h-4 w-4 text-yellow-600' />;
-    if (status === 'Resolved')
-      return <CheckCircle className='h-4 w-4 text-green-600' />;
-    return null;
-  };
-
-  const handleNewInvestigation = (investigationData: any) => {
-    createInvestigation(investigationData, {
-      onSuccess: () => {
-        toast.success('Investigation case created successfully');
-        setNewInvestigationDialogOpen(false);
-      },
-      onError: () => {
-        toast.error('Failed to create investigation case');
-      }
-    });
-  };
-
-  const pendingPublicReports = mockPublicReports.filter(
-    r => r.status === 'Pending',
-  );
+  const [searchTerm, setSearchTerm] = useState('')
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>Investigations</h1>
-          <p className='text-gray-600'>Manage fraud investigations and cases</p>
-        </div>
-        <div className='flex gap-3'>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => router.push('/investigations/pending-reports')}
-          >
-            <AlertTriangle className='h-4 w-4 mr-2' />
-            Pending Reports ({pendingPublicReports.length})
-          </Button>
-          <Button size='sm' onClick={() => setNewInvestigationDialogOpen(true)}>
-            <Plus className='h-4 w-4 mr-2' />
-            New Investigation
-          </Button>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-2">Investigations</h1>
+        <p className="text-[#94a3b8]">Manage and track active corruption investigations</p>
       </div>
 
-      {pendingPublicReports.length > 0 && (
-        <Card className='p-4 bg-yellow-50 border-yellow-200'>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-3'>
-              <AlertTriangle className='h-5 w-5 text-yellow-600' />
-              <div>
-                <p className='font-semibold text-yellow-900'>
-                  {pendingPublicReports.length} pending public report
-                  {pendingPublicReports.length !== 1 ? 's' : ''}
-                </p>
-                <p className='text-sm text-yellow-800'>
-                  Awaiting review and conversion to investigations
-                </p>
-              </div>
-            </div>
-            <Button
-              variant='default'
-              size='sm'
-              onClick={() => router.push('/investigations/pending-reports')}
-            >
-              Review Reports
-            </Button>
-          </div>
-        </Card>
-      )}
+      <Tabs defaultValue="investigations" className="w-full">
+        <TabsList className="bg-[#121418] border-b border-[#1f2937] w-full justify-start">
+          <TabsTrigger value="investigations">Active Investigations</TabsTrigger>
+          <TabsTrigger value="whistleblower">Whistleblower Reports</TabsTrigger>
+        </TabsList>
 
-      <NewInvestigationDialog
-        open={newInvestigationDialogOpen}
-        onOpenChange={setNewInvestigationDialogOpen}
-        onSubmit={handleNewInvestigation}
-      />
+        <TabsContent value="investigations" className="space-y-4">
+          {/* Search */}
+          <Input
+            type="text"
+            placeholder="Search investigations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-[#121418] border-[#1f2937]"
+          />
 
-      <div className='bg-white rounded-lg border border-gray-200 p-4 space-y-6'>
-        <div className='flex gap-4 flex-wrap items-center'>
-          <div className='flex-1 min-w-72 relative'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
-            <Input
-              placeholder='Search by title, case number, or description...'
-              value={searchQuery}
-              onChange={e => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className='pl-10'
-            />
-          </div>
-
-          <Select
-            value={statusFilter}
-            onValueChange={value => {
-              setStatusFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className='w-40'>
-              <SelectValue placeholder='Filter by status' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All Statuses</SelectItem>
-              <SelectItem value='Open'>Open</SelectItem>
-              <SelectItem value='In Progress'>In Progress</SelectItem>
-              <SelectItem value='Resolved'>Resolved</SelectItem>
-              <SelectItem value='Closed'>Closed</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={priorityFilter}
-            onValueChange={value => {
-              setPriorityFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className='w-40'>
-              <SelectValue placeholder='Filter by priority' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All Priorities</SelectItem>
-              <SelectItem value='High'>High</SelectItem>
-              <SelectItem value='Medium'>Medium</SelectItem>
-              <SelectItem value='Low'>Low</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div className='ml-auto text-sm text-gray-600'>
-            {filteredInvestigations.length} case
-            {filteredInvestigations.length !== 1 ? 's' : ''}
-          </div>
-        </div>
-
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          {isLoading ? (
-            <div className='col-span-1 md:col-span-2 py-8 text-center text-gray-500'>
-              Loading investigations...
-            </div>
-          ) : filteredInvestigations.length === 0 ? (
-            <div className='col-span-1 md:col-span-2 py-8 text-center text-gray-500'>
-              No investigations found matching your criteria.
-            </div>
-          ) : (
-            filteredInvestigations.map(investigation => (
-              <div
-                key={investigation.id}
-                className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow'
-              >
-                <div className='space-y-3'>
-                  <div className='flex items-start justify-between gap-2'>
-                    <div className='flex-1'>
-                      <div className='flex items-center gap-2'>
-                        {getStatusIcon(investigation.status)}
-                        <h3 className='font-semibold text-gray-900 line-clamp-2'>
-                          {investigation.title}
-                        </h3>
-                      </div>
-                      <p className='text-sm text-gray-600 mt-1'>
-                        {investigation.case_number}
-                      </p>
-                    </div>
-                    <Badge className={getPriorityColor(investigation.priority)}>
-                      {investigation.priority}
-                    </Badge>
+          {/* Investigations List */}
+          <div className="space-y-4">
+            {sampleInvestigations.map((inv) => (
+              <Card key={inv.id} className="bg-[#121418] border-[#1f2937] p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-white">{inv.title}</h3>
+                    <p className="text-sm text-[#94a3b8] mt-1">{inv.tender_ref}</p>
                   </div>
+                  <RiskBadge level={inv.risk_level as any} showScore={false} />
+                </div>
 
-                  <p className='text-sm text-gray-600 line-clamp-2'>
-                    {investigation.description}
-                  </p>
-
-                  <div className='flex items-center justify-between pt-3 border-t border-gray-100'>
-                    <div className='flex gap-2'>
-                      <Badge className={getStatusColor(investigation.status)}>
-                        {investigation.status}
-                      </Badge>
-                    </div>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={() =>
-                        router.push(`/investigations/${investigation.id}`)
-                      }
-                    >
-                      <Eye className='h-4 w-4' />
-                    </Button>
+                <div className="grid grid-cols-3 gap-4 mb-4 py-4 border-y border-[#1f2937]">
+                  <div>
+                    <p className="text-xs text-[#94a3b8]">Status</p>
+                    <p className="text-white font-semibold uppercase">{inv.status}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#94a3b8]">Opened</p>
+                    <p className="text-white">{inv.opened}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#94a3b8]">Investigator</p>
+                    <p className="text-white">{inv.investigator}</p>
                   </div>
                 </div>
-              </div>
-            )))}
-        </div>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
-      </div>
+                <div className="mb-4">
+                  <p className="text-sm text-[#94a3b8] mb-2">Key Findings</p>
+                  <p className="text-white text-sm">{inv.findings}</p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="border-[#1f2937]">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Package
+                  </Button>
+                  <Button variant="outline" size="sm" className="border-[#1f2937]">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="whistleblower" className="space-y-4">
+          {/* Search */}
+          <Input
+            type="text"
+            placeholder="Search reports..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-[#121418] border-[#1f2937]"
+          />
+
+          {/* Reports List */}
+          <div className="space-y-4">
+            {sampleWhistleblowerReports.map((report) => (
+              <Card key={report.id} className="bg-[#121418] border-[#1f2937] p-6">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="text-sm text-[#94a3b8]">{report.date}</p>
+                    <h3 className="text-lg font-semibold text-white mt-1">{report.allegation}</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <RiskBadge
+                      level={report.urgency as any}
+                      showScore={false}
+                      size="sm"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-white mb-3">{report.summary}</p>
+
+                <div className="flex justify-between items-end">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-xs text-[#94a3b8]">Credibility Score</p>
+                      <p className="text-lg font-mono font-bold text-[#00ff88]">{report.credibility}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#94a3b8]">Status</p>
+                      <p className={`font-semibold ${report.reviewed ? 'text-[#00ff88]' : 'text-[#f59e0b]'}`}>
+                        {report.reviewed ? 'Reviewed' : 'Pending'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" className="border-[#1f2937]">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Details
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
-  );
+  )
 }

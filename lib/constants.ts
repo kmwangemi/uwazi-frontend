@@ -48,21 +48,6 @@ export const KENYA_COUNTIES = [
   'West Pokot',
 ];
 
-export const PROCUREMENT_CATEGORIES = [
-  'Construction & Infrastructure',
-  'Medical Equipment & Supplies',
-  'Office Equipment & Furniture',
-  'Consultancy Services',
-  'ICT & Technology',
-  'Transport & Vehicles',
-  'Security Services',
-  'Stationery & Printing',
-  'Legal Services',
-  'Catering Services',
-  'Maintenance & Repairs',
-  'Other',
-];
-
 export const ENTITY_TYPES = [
   'Ministry',
   'County Government',
@@ -95,6 +80,15 @@ export const PRIORITY_LEVELS = {
   LOW: 'LOW',
 };
 
+export const ALLEGATION_TYPES = [
+  'Price inflation',
+  'Ghost supplier',
+  'Bid rigging',
+  'Kickback',
+  'Specification manipulation',
+  'Other',
+] as const;
+
 export const RISK_LEVELS = {
   CRITICAL: { min: 76, max: 100, label: 'Critical', color: 'danger' },
   HIGH: { min: 51, max: 75, label: 'High', color: 'warning' },
@@ -107,5 +101,7 @@ export const DEFAULT_PAGE_SIZE = 25;
 
 export const API_TIMEOUT = 30000; // 30 seconds
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// export const API_BASE_URL =
+//   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+export const API_BASE_URL = 'http://localhost:8000/api/v1';

@@ -1,393 +1,297 @@
-# Procurement Monitoring System - Frontend MVP
+# Kenya Procurement Anti-Corruption Monitoring System (KCAC)
 
-Kenya's AI-Powered Procurement Monitoring System - A critical anti-corruption platform for detecting and preventing fraud in public procurement worth KSh 1.5 trillion annually.
+An intelligence-grade procurement fraud detection and risk assessment platform for Kenya's public sector. Real-time analysis with AI-powered risk scoring, whistleblower portal, and investigator tools.
 
-## 🎯 Overview
+## Overview
 
-This is a production-ready Next.js 16+ frontend for the Procurement Monitoring System that helps EACC investigators, auditors, and citizens monitor government tenders, detect price inflation, identify ghost suppliers, and combat systemic corruption.
+The KCAC system provides comprehensive monitoring of procurement activities across Kenya's government entities, with focus on:
 
-## 🏗️ Architecture
+- **Real-time risk scoring** of tenders and suppliers
+- **Fraud detection** using machine learning (price inflation, ghost companies, bid rigging)
+- **Anonymous whistleblower portal** with credibility assessment
+- **Investigation management** with case tracking
+- **Analytics dashboard** with county-level and entity-level insights
+- **ML model management** for continuous model improvement
 
-### Tech Stack
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS 4
-- **UI Components**: shadcn/ui
-- **State Management**: Zustand + React Query
-- **Forms**: React Hook Form + Zod
-- **Charts**: Recharts + D3.js
-- **Maps**: Leaflet + React-Leaflet
-- **HTTP Client**: Axios
-- **PDF Generation**: react-pdf/renderer
-- **Date Handling**: date-fns
+## Tech Stack
+
+- **Frontend**: Next.js 16, React 19, Tailwind CSS v4
+- **State Management**: Zustand
+- **UI Components**: shadcn/ui + custom risk assessment components
+- **Data Visualization**: Recharts
 - **Icons**: Lucide React
+- **Authentication**: Custom JWT-based (no next-auth)
+- **Styling**: IBM Plex fonts, intelligence-grade dark theme
 
-### Project Structure
+## Architecture
+
+### Directory Structure
 
 ```
-src/
-├── app/                          # Next.js App Router pages
-│   ├── (auth)/login/            # Authentication pages
-│   ├── (dashboard)/              # Protected dashboard routes
-│   │   ├── dashboard/            # Main dashboard
-│   │   ├── tenders/              # Tenders module
-│   │   ├── suppliers/            # Suppliers module
-│   │   ├── entities/             # Procuring entities
-│   │   ├── investigations/       # Case management
-│   │   ├── analytics/            # Analytics & insights
-│   │   ├── reports/              # Report generation
-│   │   └── settings/             # User settings
-│   └── (public)/                 # Public pages
-│       ├── transparency/         # Public portal
-│       └── whistleblower/        # Anonymous reporting
-├── components/
-│   ├── layout/                   # Layout components
-│   ├── dashboard/                # Dashboard-specific
-│   ├── shared/                   # Reusable components
-│   └── ui/                       # shadcn/ui components
-├── lib/
-│   ├── api.ts                    # Axios configuration
-│   ├── constants.ts              # Constants & enums
-│   ├── formatters.ts             # Formatting utilities
-│   ├── validations.ts            # Zod schemas
-│   └── mockData.ts               # Mock data for development
-├── services/                     # API service layer
-├── stores/                       # Zustand stores
-├── types/                        # TypeScript types
-└── styles/                       # Global styles
+app/
+├── (auth)/                    # Auth routes (login, etc)
+├── (dashboard)/               # Main app routes
+│   ├── page.tsx              # Dashboard homepage
+│   ├── tenders/              # Tender browsing and detail pages
+│   ├── suppliers/            # Supplier profiles
+│   ├── risk/                 # Risk analysis tools
+│   ├── analytics/            # Analytics and reporting
+│   ├── investigations/       # Investigation management
+│   ├── whistleblower/        # Anonymous reporting
+│   ├── ml-status/            # ML model management
+│   └── settings/             # User settings
+├── layout.tsx                # Root layout
+└── not-found.tsx             # 404 handling
+
+components/
+├── Sidebar.tsx               # Navigation sidebar
+├── Topbar.tsx                # Top bar with search
+├── RiskBadge.tsx             # Risk level indicator
+├── RiskGauge.tsx             # Circular progress gauge
+├── ErrorBoundary.tsx         # Error handling
+├── LoadingSkeletons.tsx      # Loading states
+├── dashboard/                # Dashboard components
+│   ├── TrendChart.tsx
+│   ├── TopRiskSuppliersCard.tsx
+│   ├── HighRiskTendersTable.tsx
+│   └── AIQueryBox.tsx
+└── analytics/                # Analytics components
+    ├── RiskDistribution.tsx
+    ├── CountyAnalysis.tsx
+    └── SpendingTrend.tsx
+
+lib/
+├── types.ts                  # TypeScript interfaces
+├── api.ts                    # API client with interceptors
+├── store.ts                  # Zustand stores
+└── utils.ts                  # Utility functions
+
+middleware.ts                 # Route protection
 ```
 
-## 🚀 Getting Started
+### Authentication Flow
 
-### Prerequisites
-- Node.js 18+
-- npm, yarn, or pnpm
+1. User logs in with email/password
+2. API returns JWT token + user data
+3. Token stored in Zustand auth store
+4. Middleware checks token, redirects to login if missing
+5. Auto-refresh on 401 response using axios interceptor
+6. Logout clears token and returns to login
 
-### Installation
+**Default Credentials (for demo)**:
+- Email: `admin@kcac.go.ke`
+- Password: `demo123`
 
-1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd procurement-monitor-frontend
+### State Management (Zustand)
+
+```typescript
+// Auth store - user data, login/logout
+useAuthStore()
+
+// Dashboard store - KPI data
+useDashboardStore()
+
+// Tender filters - search, pagination, risk level
+useTenderFiltersStore()
+
+// Supplier filters - search, pagination
+useSupplierFiltersStore()
+
+// UI store - sidebar open/close
+useUIStore()
 ```
 
-2. **Install dependencies**
-```bash
-pnpm install
-```
+## Design System
 
-3. **Set up environment variables**
-```bash
-cp .env.example .env.local
-```
+### Color Palette (Intelligence-Grade Terminal)
 
-Edit `.env.local`:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_APP_NAME=Procurement Monitoring System
-NEXT_PUBLIC_ENVIRONMENT=development
-```
+- **Primary**: Acid green `#00ff88` - Safe/Good/Critical priority
+- **Danger**: Red `#ef4444` - High risk
+- **Warning**: Amber `#f59e0b` - Medium risk
+- **Neutral**: Slate gray `#64748b` - Low risk
+- **Background**: Near-black `#0a0c0f` - Dark terminal aesthetic
+- **Text**: Off-white `#e0e0e0` - High contrast
 
-4. **Run development server**
-```bash
-pnpm dev
-```
+### Risk Color Mapping
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 📋 Features
-
-### Authentication (Complete)
-- ✅ Login page with email/password
-- ✅ Protected routes
-- ✅ User session management
-- ✅ Remember me functionality
-- ✅ Auth state persistence
-
-### Dashboard (Complete)
-- ✅ Real-time statistics cards
-- ✅ Risk distribution visualization
-- ✅ Fraud trends chart (90-day history)
-- ✅ County savings comparison
-- ✅ Top corrupt entities leaderboard
-- ✅ Responsive design
-
-### Tenders Module
-- 🔄 List with advanced filtering
-  - Search by tender number/title
-  - Filter by county, entity, category
-  - Risk level slider
-  - Date range picker
-  - Amount range
-- 🔄 Detail view with:
-  - Risk analysis
-  - Price comparison
-  - Supplier verification
-  - Specification analysis
-  - Network graph
-  - Investigation panel
-- 🔄 Upload functionality
-  - CSV/Excel support
-  - Batch processing
-  - Validation errors
-
-### Suppliers Module
-- 🔄 List with verification status
-- 🔄 Detail view with:
-  - Verification checklist
-  - Directors information
-  - Contract history
-  - Network analysis
-  - Red flags
-
-### Procuring Entities
-- 🔄 List and comparison
-- 🔄 Detailed statistics
-- 🔄 Spending analysis
-- 🔄 Risk profiles
-
-### Investigations
-- 🔄 Case management
-- 🔄 Evidence gallery
-- 🔄 Timeline tracking
-- 🔄 Outcome recording
-
-### Public Portal (Complete)
-- ✅ Transparency page
-- ✅ Public statistics
-- ✅ Key insights
-- ✅ Call-to-action for whistleblowing
-
-### Whistleblower Reporting (Complete)
-- ✅ Anonymous submission form
-- ✅ Multiple report types
-- ✅ Tracking ID generation
-- ✅ Status tracking
-- ✅ Legal protection information
-- ✅ Encrypted storage
-
-### Analytics & Reports
-- 🔄 Interactive charts
-- 🔄 County comparison tools
-- 🔄 Category deep-dive
-- 🔄 Report templates
-- 🔄 PDF export
-
-## 🎨 Design System
-
-### Colors
-- **Primary**: Blue (#2563EB) - Trust, government
-- **Success**: Green (#10B981) - Savings, approved
-- **Warning**: Orange (#F59E0B) - Medium risk
-- **Danger**: Red (#EF4444) - High risk, corruption
-- **Kenya Flag Colors**: Black, Red (#BB0000), Green (#006600)
-
-### Risk Score Colors
-- 0-25: Green (Low)
-- 26-50: Yellow (Medium)
-- 51-75: Orange (High)
-- 76-100: Red (Critical)
+- **Critical** (80+): Acid green - Requires immediate action
+- **High** (50-79): Red - Significant risk
+- **Medium** (25-49): Amber - Requires attention
+- **Low** (0-24): Slate gray - Monitor
 
 ### Typography
-- **Headings**: Inter (bold)
-- **Body**: Inter (regular)
-- **Monospace**: JetBrains Mono (IDs, numbers)
 
-## 🔐 Security Features
+- **Sans**: IBM Plex Sans - Prose and UI labels
+- **Mono**: IBM Plex Mono - Numbers, codes, technical data
 
-- ✅ TypeScript strict mode (no `any`)
-- ✅ Zod validation for all forms
-- ✅ Protected routes with auth checks
-- ✅ Secure token storage
-- ✅ CORS-protected API calls
-- ✅ Input sanitization
-- ✅ XSS prevention
-- ✅ Environment variable validation
+## API Integration
 
-## 🧪 Development
+The `lib/api.ts` provides a complete API client:
 
-### Code Quality
+```typescript
+// Auth
+authApi.login(email, password)
+authApi.logout()
+authApi.me()
+
+// Tenders
+tendersApi.list(filters)
+tendersApi.get(id)
+tendersApi.getRiskFactors(id)
+
+// Suppliers
+suppliersApi.list(filters)
+suppliersApi.get(id)
+suppliersApi.getRelationships(id)
+
+// Risk Analysis
+riskApi.checkPrice(params)
+riskApi.analyzeSpecs(text)
+
+// Whistleblower
+whistleblowerApi.submit(report)
+
+// Investigations
+investigationsApi.list()
+investigationsApi.update(id, status)
+```
+
+## Key Features
+
+### Dashboard
+- Real-time KPI summary (total tenders, flagged count, savings identified, avg risk)
+- Risk trend chart showing monthly risk evolution
+- Top risk suppliers table with ghost probability
+- High-risk tenders alert table
+- AI query box for natural language questions
+
+### Tender Intelligence
+- Browse all tenders with filters (risk, county, category)
+- Detailed tender view with:
+  - Risk factors breakdown
+  - Supplier analysis
+  - Price benchmarking
+  - Document uploads
+  - Investigation notes
+  - AI summary
+
+### Supplier Analysis
+- Supplier risk profiles with ghost company detection
+- Company age, director count, registration validation
+- Relationship mapping to other entities
+- Historical tender participation
+- Flag for further investigation
+
+### Risk Assessment
+- **Price Benchmark**: Compare estimated price to historical benchmarks
+- **Specification Analysis**: Detect brand restrictions and restrictiveness scores
+- **County Overview**: Regional risk comparison
+
+### Investigations (Admin/Investigator)
+- Manage active investigation cases
+- Track whistleblower reports with credibility scores
+- Case status workflow
+- Export case packages
+
+### Whistleblower Portal
+- Anonymous allegation submission
+- 8 allegation types (price inflation, ghost supplier, bid rigging, etc)
+- AI triage and credibility assessment
+- Encryption and anonymity guarantees
+- Secure email contact option
+
+### ML Model Dashboard (Admin)
+- Monitor 8 ML models (XGBoost, Isolation Forest, spaCy NER, etc)
+- Train/retrain models with progress tracking
+- Spending forecast by entity
+- Model performance metrics
+
+### Analytics
+- Comprehensive reporting with time range + county filters
+- KPI cards with delta indicators
+- Spending trends (budgeted vs actual vs flagged)
+- Risk distribution pie chart
+- County performance comparison
+- Key findings summary
+
+## Error Handling
+
+- **Error Boundary**: Catches React component errors
+- **404 Page**: Custom not-found experience
+- **API Errors**: Handled with user-friendly messages
+- **Loading States**: Skeleton screens during data fetching
+- **Form Validation**: Client-side with error messages
+
+## Security Features
+
+- JWT authentication with auto-refresh
+- Middleware-based route protection
+- Role-based access control (admin, investigator, viewer)
+- Password hashing (bcrypt-ready in backend)
+- Secure session management
+- No PII collection in whistleblower portal
+- Encrypted communication indicators
+
+## Performance Optimizations
+
+- Code splitting by route
+- Image optimization
+- Font optimization (Google Fonts)
+- Responsive design (mobile-first)
+- SWR for client data caching
+- Debounced search inputs
+
+## Environment Variables
+
+Create `.env.local`:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+```
+
+## Running Locally
 
 ```bash
-# Run linting
-pnpm lint
+# Install dependencies
+pnpm install
 
-# Format code
-pnpm format
+# Run dev server
+pnpm dev
 
-# Type check
-pnpm type-check
+# Open browser
+open http://localhost:3000
 ```
 
-### Component Guidelines
+## Deployment
 
-1. **Components must be < 200 lines** (split into subcomponents if needed)
-2. **Use meaningful names** (no abbreviations)
-3. **Include JSDoc comments** for complex logic
-4. **Use semantic HTML** (<nav>, <main>, <section>)
-5. **Ensure accessibility** (ARIA labels, keyboard nav)
-6. **Mobile-first responsive design**
-7. **Follow Tailwind conventions**
+Deploy to Vercel with GitHub integration:
 
-### State Management Pattern
+1. Push to GitHub
+2. Connect repository to Vercel
+3. Configure environment variables
+4. Deploy automatically on push
 
-**Zustand for UI State:**
-```typescript
-// stores/uiStore.ts
-const { sidebarOpen, toggleSidebar } = useUIStore()
-```
+## Future Enhancements
 
-**Zustand for Auth:**
-```typescript
-// stores/authStore.ts
-const { user, login, logout } = useAuthStore()
-```
+- Webhook notifications for high-risk tenders
+- Email alerts and weekly digests
+- Advanced graph analytics for relationship mapping
+- Bulk data import from government sources
+- API for external integrations
+- Custom report builder
+- Mobile app for investigators
 
-**React Query for Server State:**
-```typescript
-// hooks/useTenders.ts
-const { data, isLoading } = useTenders(params)
-```
+## Documentation
 
-## 📊 Mock Data
+- **Types**: See `lib/types.ts` for complete API schema
+- **API**: See `lib/api.ts` for all API methods
+- **Components**: Each component has JSDoc comments
+- **Utilities**: Helper functions in `lib/utils.ts`
 
-The application includes comprehensive mock data in `lib/mockData.ts` for development:
-- 50 sample tenders with various risk levels
-- 30 suppliers with verification data
-- 20 procuring entities
-- 15 investigations
-- Dashboard statistics (all 47 counties)
+## Support
 
-## 🔌 API Integration
-
-### Expected Backend Endpoints
-
-```
-POST   /api/auth/login
-POST   /api/auth/logout
-GET    /api/auth/me
-POST   /api/auth/refresh
-
-GET    /api/dashboard/stats
-GET    /api/dashboard/alerts
-GET    /api/dashboard/counties
-GET    /api/dashboard/fraud-trends
-
-GET    /api/tenders
-GET    /api/tenders/{id}
-POST   /api/tenders/upload
-GET    /api/tenders/export
-POST   /api/analyze/tender/{id}
-
-GET    /api/suppliers
-GET    /api/suppliers/{id}
-POST   /api/suppliers/{id}/verify
-
-GET    /api/entities
-GET    /api/entities/{id}
-
-GET    /api/investigations
-GET    /api/investigations/{id}
-POST   /api/investigations
-PUT    /api/investigations/{id}
-POST   /api/investigations/{id}/close
-POST   /api/investigations/{id}/evidence
-```
-
-## 🧩 Key Components
-
-### Shared Components
-- `LoadingSpinner` - Loading states
-- `ErrorBoundary` - Error handling
-- `EmptyState` - No data states
-- `RiskScoreMeter` - Circular risk visualization
-- `StatsCard` - Dashboard statistics
-- `TenderCard` - Tender card display
-
-### Layout Components
-- `Header` - Top navigation
-- `Sidebar` - Side navigation
-- `DashboardLayout` - Dashboard wrapper
-- `PublicLayout` - Public pages wrapper
-
-### Form Components
-- Login form with validation
-- Whistleblower form
-- Investigation creation form
-- Advanced filter panels
-
-## 🚢 Deployment
-
-### Building for Production
-
-```bash
-pnpm build
-pnpm start
-```
-
-### Deployment Platforms
-
-**Vercel (Recommended)**
-```bash
-vercel deploy
-```
-
-**Other Platforms**
-- Netlify
-- AWS Amplify
-- DigitalOcean App Platform
-- Heroku (via Docker)
-
-### Environment Variables for Production
-
-```env
-NEXT_PUBLIC_API_URL=https://api.procmon.ke
-NEXT_PUBLIC_ENVIRONMENT=production
-NEXT_PUBLIC_APP_NAME=Procurement Monitoring System
-```
-
-## 📈 Performance Optimizations
-
-- ✅ Code splitting with dynamic imports
-- ✅ Image optimization with Next.js Image
-- ✅ React Query caching (1-minute stale time)
-- ✅ Debounced search (300ms)
-- ✅ Pagination (25-50 items per page)
-- ✅ Tree-shaking unused code
-- ✅ CSS purging with Tailwind
-
-## ♿ Accessibility
-
-- ✅ Semantic HTML
-- ✅ ARIA labels and roles
-- ✅ Keyboard navigation support
-- ✅ Focus indicators
-- ✅ Color contrast (4.5:1 minimum)
-- ✅ Alt text for images
-- ✅ Screen reader friendly tables
-- ✅ Skip to content links
-
-## 🧹 Cleaning Up Mock Data
-
-To switch from mock data to real API:
-
-1. **Update services** - Remove mock fallbacks
-2. **Remove mockData.ts** - Delete the file
-3. **Update .env.local** - Set real API URL
-4. **Test API calls** - Verify all endpoints work
-
-## 📝 License
-
-This project is part of Kenya's anti-corruption initiative. All rights reserved.
-
-## 🤝 Contributing
-
-For issues and improvements, please contact the development team.
-
-## 📞 Support
-
-For technical support, email: support@procmon.ke
+For issues or questions, open a GitHub issue or contact the development team.
 
 ---
 
-**Made with ❤️ to fight corruption and protect Kenya's future**
+Built with precision for Kenya's procurement integrity.

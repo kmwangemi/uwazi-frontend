@@ -1,132 +1,115 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-import { DecodedToken } from '@/types/common';
-import { formatDate, formatDistanceToNowStrict } from 'date-fns';
-import { jwtDecode } from 'jwt-decode';
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+import { format, formatDistance, isValid, parse } from 'date-fns'
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 
-export function formatRelativeDate(createdAt: Date) {
-  const currentDate = new Date();
-  const oneYearInMs = 365 * 24 * 60 * 60 * 1000; // One year in milliseconds
-  if (currentDate.getTime() - createdAt.getTime() <= oneYearInMs) {
-    // Return relative time if difference is less than or equal to 1 year
-    return formatDistanceToNowStrict(createdAt, { addSuffix: true });
+// Format currency in Kenyan Shillings
+export function formatKES(amount: number): string {
+  if (amount >= 1_000_000_000) {
+    return `KES ${(amount / 1_000_000_000).toFixed(1)}B`
   }
-  // Return full date with year if difference is more than 1 year
-  return formatDate(createdAt, 'MMM d, yyyy');
+  if (amount >= 1_000_000) {
+    return `KES ${(amount / 1_000_000).toFixed(1)}M`
+  }
+  if (amount >= 1_000) {
+    return `KES ${(amount / 1_000).toFixed(1)}K`
+  }
+  return `KES ${amount.toFixed(0)}`
 }
-export const capitalizeFirstLetter = (str: string) => {
-  if (typeof str !== 'string' || str.length === 0) {
-    return '';
-  }
-  return str.charAt(0).toUpperCase() + str.substring(1);
-};
-export const firstLetter = (str: string): string => {
-  if (!str) return '';
-  return str.charAt(0);
-};
-export const formatToNewDate = (date: Date | string): string => {
-  if (!date) return '';
-  return formatDate(date, 'dd/MM/yyyy');
-};
-export const capitalizeFirstLetterOfEachWord = (str: string): string => {
-  if (!str) return '';
-  return str
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
-export const formatNotificationCount = (count: number) => {
-  // You can customize the threshold as needed
-  const threshold = 99;
-  if (count > threshold) {
-    return `${threshold}+`;
-  }
-  return count.toString();
-};
-export const decodeToken = (
-  token: string | undefined | null,
-): DecodedToken | null | unknown => {
+
+// Format date to Kenyan English convention
+export function formatDate(isoString: string): string {
   try {
-    if (token) {
-      const decodedToken = jwtDecode(token);
-      return decodedToken;
-    }
-    return null;
-  } catch (error) {
-    // console.error('Error decoding token:', error);
-    // You can handle the error case here, such as returning a default value or throwing an exception
-    return null; // or throw new Error('Failed to decode token');
+    const date = new Date(isoString)
+    if (!isValid(date)) return isoString
+    return format(date, 'd MMM yyyy')
+  } catch {
+    return isoString
   }
-};
-export const addCommasToNumber = (input: string | number): string => {
-  // Convert the input to a number if it's a string
-  const number: number =
-    typeof input === 'string' ? parseFloat(input) : Number(input);
-  // Check if the conversion was successful
-  if (Number.isNaN(number)) {
-    return '0';
-  }
-  // Convert the number to a string
-  let numberString: string = number.toString();
-  // Handle negative numbers
-  let isNegative = false;
-  if (number < 0) {
-    isNegative = true;
-    numberString = numberString.slice(1); // Remove the negative sign for processing
-  }
-  // Use a regular expression to add commas to the string
-  numberString = numberString.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  // Add back the negative sign if needed
-  if (isNegative) {
-    numberString = `-${numberString}`;
-  }
-  return numberString;
-};
-export const generatePagination = (currentPage: number, totalPages: number) => {
-  // If the total number of pages is 7 or less,
-  // display all pages without any ellipsis.
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-  // If the current page is among the first 3 pages,
-  // show the first 3, an ellipsis, and the last 2 pages.
-  if (currentPage <= 3) {
-    return [1, 2, 3, '...', totalPages - 1, totalPages];
-  }
-  // If the current page is among the last 3 pages,
-  // show the first 2, an ellipsis, and the last 3 pages.
-  if (currentPage >= totalPages - 2) {
-    return [1, 2, '...', totalPages - 2, totalPages - 1, totalPages];
-  }
-  // If the current page is somewhere in the middle,
-  // show the first page, an ellipsis, the current page and its neighbors,
-  // another ellipsis, and the last page.
-  return [
-    1,
-    '...',
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-    '...',
-    totalPages,
-  ];
-};
-export const stringToBool = (str: string): boolean => {
-  return str.toLowerCase() === 'true';
-};
+}
 
-/**
- * Get initial letters from name
- */
-export const getInitials = (name: string): string => {
-  return name
-    .split(' ')
-    .map(n => n.charAt(0).toUpperCase())
-    .join('')
-    .substring(0, 2);
-};
+// Get days until a date
+export function daysUntil(isoString: string): number {
+  try {
+    const date = new Date(isoString)
+    const now = new Date()
+    const diff = date.getTime() - now.getTime()
+    return Math.ceil(diff / (1000 * 60 * 60 * 24))
+  } catch {
+    return 0
+  }
+}
+
+// Get formatted time until deadline
+export function timeUntil(isoString: string): string {
+  try {
+    const date = new Date(isoString)
+    if (date < new Date()) return 'Closed'
+    return formatDistance(date, new Date(), { addSuffix: true })
+  } catch {
+    return ''
+  }
+}
+
+// Truncate text
+export function truncate(text: string, length: number): string {
+  if (text.length <= length) return text
+  return text.substring(0, length) + '...'
+}
+
+// Risk color utilities
+export function riskColor(level: string): string {
+  const colors = {
+    critical: 'bg-[#00ff88] text-black',
+    high: 'bg-[#ef4444] text-white',
+    medium: 'bg-[#f59e0b] text-black',
+    low: 'bg-[#64748b] text-white',
+  }
+  return colors[level as keyof typeof colors] || colors.low
+}
+
+export function riskColorHex(level: string): string {
+  const colors = {
+    critical: '#00ff88',
+    high: '#ef4444',
+    medium: '#f59e0b',
+    low: '#64748b',
+  }
+  return colors[level as keyof typeof colors] || colors.low
+}
+
+export function riskTextColor(level: string): string {
+  const colors = {
+    critical: 'text-[#00ff88]',
+    high: 'text-[#ef4444]',
+    medium: 'text-[#f59e0b]',
+    low: 'text-[#64748b]',
+  }
+  return colors[level as keyof typeof colors] || colors.low
+}
+
+export function riskBgColor(level: string): string {
+  const colors = {
+    critical: 'bg-[#00ff88]/10',
+    high: 'bg-[#ef4444]/10',
+    medium: 'bg-[#f59e0b]/10',
+    low: 'bg-[#64748b]/10',
+  }
+  return colors[level as keyof typeof colors] || colors.low
+}
+
+// Percentage change indicator
+export function formatDelta(delta: number | undefined): string {
+  if (delta === undefined) return ''
+  if (delta > 0) return `+${delta.toFixed(1)}%`
+  return `${delta.toFixed(1)}%`
+}
+
+// Deviation percentage
+export function formatDeviation(deviation: number): string {
+  if (deviation > 0) return `+${deviation.toFixed(1)}%`
+  return `${deviation.toFixed(1)}%`
+}
