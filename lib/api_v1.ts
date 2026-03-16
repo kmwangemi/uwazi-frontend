@@ -1,35 +1,42 @@
+import { API_BASE_URL, API_TIMEOUT } from '@/lib/constants';
 import { useAuthStore } from '@/lib/store';
 import axios, { AxiosError, AxiosInstance } from 'axios';
-import { API_BASE_URL, API_TIMEOUT } from './constants';
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT,
+  withCredentials: true, // ✅ sends auth_token + refresh_token cookies automatically
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// ── Request interceptor — attach Bearer token ─────────────────────────────────
+// ── Public routes — 401s here never trigger logout/redirect ──────────────────
+const PUBLIC_PATHS = ['/login', '/register'];
+
+const isPublicPage = () =>
+  typeof window !== 'undefined' &&
+  PUBLIC_PATHS.some(path => window.location.pathname.startsWith(path));
+
+// ── Request interceptor — REMOVED token attachment ────────────────────────────
+// ✅ No longer needed — FastAPI reads auth_token from HttpOnly cookie directly.
+// Your backend dependency (CurrentUser) must read from cookie, not Authorization header.
 apiClient.interceptors.request.use(config => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  return config; // passthrough — cookies attach automatically
 });
 
 // ── Silent token refresh on 401 ───────────────────────────────────────────────
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (token: string) => void;
+  resolve: () => void;
   reject: (error: unknown) => void;
 }> = [];
 
-const processQueue = (error: unknown, token: string | null) => {
-  failedQueue.forEach(p => (error ? p.reject(error) : p.resolve(token!)));
+const processQueue = (error: unknown) => {
+  failedQueue.forEach(p => (error ? p.reject(error) : p.resolve()));
   failedQueue = [];
 };
+
 
 apiClient.interceptors.response.use(
   response => response,
@@ -37,58 +44,53 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as typeof error.config & {
       _retry?: boolean;
     };
-
     const status = error.response?.status;
 
-    // ✅ Pass through ALL non-401 errors immediately — 409, 422, 400, 500 etc.
-    // These are real business errors that callers must handle themselves.
+    // ✅ Pass through all non-401 errors
     if (status !== 401) {
       return Promise.reject(error);
     }
 
-    // ✅ Pass through 401s from auth endpoints — wrong credentials,
-    // expired refresh token etc. are not session errors.
+    // ✅ Pass through 401s on public pages
+    if (isPublicPage()) {
+      return Promise.reject(error);
+    }
+
+    // ✅ Pass through 401s from auth endpoints
     const isAuthEndpoint =
       originalRequest?.url?.includes('/auth/login') ||
       originalRequest?.url?.includes('/auth/refresh');
 
     if (isAuthEndpoint || originalRequest._retry) {
-      return Promise.reject(error);
-    }
-
-    // ── Everything below only runs for 401s on protected endpoints ──────────
-
-    const { refreshToken, setToken, logout } = useAuthStore.getState();
-    if (!refreshToken) {
-      logout();
+      // Refresh token itself is expired/revoked — force logout
+      useAuthStore.getState().logout();
       if (typeof window !== 'undefined') window.location.href = '/login';
       return Promise.reject(error);
     }
+
+    // ── Queue concurrent requests while refresh is running ───────────────
     if (isRefreshing) {
-      return new Promise<string>((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         failedQueue.push({ resolve, reject });
-      }).then(token => {
-        originalRequest!.headers!.Authorization = `Bearer ${token}`;
-        return apiClient(originalRequest!);
-      });
+      }).then(() => apiClient(originalRequest!)); // ✅ no token to re-attach — cookie handles it
     }
+
     originalRequest._retry = true;
     isRefreshing = true;
+
     try {
-      const { data } = await axios.post<{
-        access_token: string;
-        token_type: string;
-        expires_in: number;
-      }>(`${API_BASE_URL}/auth/refresh`, {
-        refresh_token: refreshToken,
-      });
-      setToken(data.access_token);
-      originalRequest!.headers!.Authorization = `Bearer ${data.access_token}`;
-      processQueue(null, data.access_token);
-      return apiClient(originalRequest!);
+      // ✅ No body needed — refresh_token cookie is sent automatically
+      await axios.post(
+        `${API_BASE_URL}/auth/refresh`,
+        {},
+        { withCredentials: true },
+      );
+
+      processQueue(null);
+      return apiClient(originalRequest!); // ✅ retry with new auth_token cookie
     } catch (refreshError) {
-      processQueue(refreshError, null);
-      logout();
+      processQueue(refreshError);
+      useAuthStore.getState().logout();
       if (typeof window !== 'undefined') window.location.href = '/login';
       return Promise.reject(refreshError);
     } finally {
@@ -116,7 +118,6 @@ export const handleApiError = (error: unknown): string => {
 };
 
 // ── Type-safe API helpers ─────────────────────────────────────────────────────
-
 export const api = {
   get: <T>(url: string, config = {}) =>
     apiClient.get<T>(url, config).then(res => res.data),

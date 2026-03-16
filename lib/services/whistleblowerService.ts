@@ -8,14 +8,14 @@ import {
 
 export const whistleblowerService = {
   submit: (report: WhistleblowerReport): Promise<WhistleblowerResponse> =>
-    api.post<WhistleblowerResponse>('/api/whistleblower/submit', report),
+    api.post<WhistleblowerResponse>('/whistleblower/submit', report),
 
   list: (
     filters?: Record<string, string>,
   ): Promise<PaginatedResponse<WhistleblowerListItem>> => {
     const params = new URLSearchParams(filters || {});
     return api.get<PaginatedResponse<WhistleblowerListItem>>(
-      `/api/whistleblower/reports?${params.toString()}`,
+      `/whistleblower/reports?${params.toString()}`,
     );
   },
 };

@@ -31,18 +31,16 @@ export const tendersService = {
     params.append('limit', (filters.limit || 20).toString());
     if (filters.sort_by) params.append('sort_by', filters.sort_by);
     if (filters.sort_order) params.append('sort_order', filters.sort_order);
-    return api.get<PaginatedResponse<Tender>>(
-      `/api/tenders?${params.toString()}`,
-    );
+    return api.get<PaginatedResponse<Tender>>(`/tenders?${params.toString()}`);
   },
-  get: (id: string): Promise<Tender> => api.get<Tender>(`/api/tenders/${id}`),
+  get: (id: string): Promise<Tender> => api.get<Tender>(`/tenders/${id}`),
 
   analyzeRisk: (id: string, useAi: boolean = true): Promise<RiskScore> =>
-    api.post<RiskScore>(`/api/tenders/${id}/analyze-risk?use_ai=${useAi}`),
+    api.post<RiskScore>(`/tenders/${id}/analyze-risk?use_ai=${useAi}`),
 
   getInvestigationPackage: (id: string): Promise<InvestigationPackage> =>
-    api.get<InvestigationPackage>(`/api/tenders/${id}/investigation-package`),
+    api.get<InvestigationPackage>(`/tenders/${id}/investigation-package`),
 
   getCollusionAnalysis: (id: string): Promise<CollusionAnalysis> =>
-    api.get<CollusionAnalysis>(`/api/tenders/${id}/collusion-analysis`),
+    api.get<CollusionAnalysis>(`/tenders/${id}/collusion-analysis`),
 };
