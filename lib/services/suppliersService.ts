@@ -12,9 +12,8 @@ export const suppliersService = {
     params.append('page', (filters.page || 1).toString());
     params.append('limit', (filters.limit || 20).toString());
     return api.get<PaginatedResponse<Supplier>>(
-      `/api/suppliers?${params.toString()}`,
+      `/suppliers?${params.toString()}`,
     );
   },
-  get: (id: string): Promise<Supplier> =>
-    api.get<Supplier>(`/api/suppliers/${id}`),
+  get: (id: string): Promise<Supplier> => api.get<Supplier>(`/suppliers/${id}`),
 };

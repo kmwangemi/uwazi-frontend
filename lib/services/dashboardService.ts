@@ -8,14 +8,14 @@ import {
 
 export const dashboardService = {
   getStats: (): Promise<DashboardStats> =>
-    api.get<DashboardStats>('/api/dashboard/stats'),
+    api.get<DashboardStats>('/dashboard/stats'),
 
   getHeatmap: (): Promise<DashboardHeatmapData[]> =>
-    api.get<DashboardHeatmapData[]>('/api/dashboard/heatmap'),
+    api.get<DashboardHeatmapData[]>('/dashboard/heatmap'),
 
   getTopRiskSuppliers: (): Promise<TopRiskSupplier[]> =>
-    api.get<TopRiskSupplier[]>('/api/dashboard/top-risk-suppliers'),
+    api.get<TopRiskSupplier[]>('/dashboard/top-risk-suppliers'),
 
   aiQuery: (question: string): Promise<AIQueryResponse> =>
-    api.post<AIQueryResponse>('/api/dashboard/ai-query', { question }),
+    api.post<AIQueryResponse>('/dashboard/ai-query', { question }),
 };

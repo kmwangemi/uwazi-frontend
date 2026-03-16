@@ -2,15 +2,6 @@ export type UserRole = 'admin' | 'investigator' | 'auditor' | 'analyst';
 
 export type UserStatus = 'active' | 'inactive' | 'suspended';
 
-export interface UserLoginResponse {
-  email: string;
-  full_name: string;
-  is_active: boolean;
-  is_superuser: boolean;
-  must_change_password: boolean;
-  roles: UserRole[];
-}
-
 export interface LoginRequest {
   username: string;
   password: string;
@@ -24,17 +15,12 @@ export interface LoginTokens {
 }
 
 export interface LoginResponse {
-  tokens: LoginTokens;
-  user: UserLoginResponse;
-}
-
-export interface AuthState {
-  user: UserLoginResponse | null;
-  token: string | null;
-  refreshToken: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
+  email: string;
+  full_name: string;
+  roles: string[]; // ← array not string
+  is_superuser: boolean;
+  must_change_password: boolean;
+  is_active: boolean;
 }
 
 // ─── User / profile domain types ─────────────────────────────────────────────
@@ -72,15 +58,6 @@ export interface UserProfile {
   roles: Role[];
   createdAt: string; // Fix 2: IS returned by /users/profile via TimestampMixin
   updatedAt: string;
-}
-
-// GET /users/profile/stats — Fix 1: replaces hardcoded stat values
-export interface UserPerformanceStats {
-  casesInvestigated: number;
-  alertsReviewed: number;
-  fraudCasesConfirmed: number;
-  totalFraudAmountRecovered: number;
-  totalFraudAmountDisplay: string; // pre-formatted "KES 2.4M"
 }
 
 // PATCH /auth/password

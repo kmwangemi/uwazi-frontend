@@ -1,15 +1,12 @@
-import { UserLoginResponse } from '@/lib/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { LoginResponse } from '@/lib/types/user';
+
 interface AuthState {
-  user: UserLoginResponse | null;
-  token: string | null;
-  refreshToken: string | null;
+  user: LoginResponse | null;
   hasHydrated: boolean;
-  setUser: (user: UserLoginResponse) => void;
-  setToken: (token: string) => void;
-  setRefreshToken: (token: string) => void;
+  setUser: (user: LoginResponse) => void;
   logout: () => void;
   checkAuth: () => boolean;
   setHasHydrated: (state: boolean) => void;
@@ -19,28 +16,15 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      token: null,
-      refreshToken: null,
       hasHydrated: false,
       setUser: user => set({ user }),
-      setToken: token => set({ token }),
-      setRefreshToken: token => set({ refreshToken: token }),
-      logout: () =>
-        set({
-          user: null,
-          token: null,
-          refreshToken: null,
-        }),
-      checkAuth: () => !!get().token,
+      logout: () => set({ user: null }),
+      checkAuth: () => !!get().user,
       setHasHydrated: state => set({ hasHydrated: state }),
     }),
     {
       name: 'auth-storage',
-      partialize: state => ({
-        user: state.user,
-        token: state.token,
-        refreshToken: state.refreshToken,
-      }),
+      partialize: state => ({ user: state.user }), // ✅ only user, no tokens
       onRehydrateStorage: () => state => {
         state?.setHasHydrated(true);
       },
