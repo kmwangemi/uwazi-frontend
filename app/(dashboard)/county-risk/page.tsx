@@ -3,7 +3,12 @@
 import { RiskBadge } from '@/components/RiskBadge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Download } from 'lucide-react';
+import {
+  useCountyRisk,
+  useRiskTrend,
+  useRiskTypeDistribution,
+} from '@/lib/queries/useCountyRiskQueries';
+import { Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import {
   Bar,
@@ -21,117 +26,17 @@ import {
   YAxis,
 } from 'recharts';
 
-const COLORS = {
-  critical: '#00ff88',
-  high: '#ef4444',
-  medium: '#f59e0b',
-  low: '#64748b',
-};
-
-// Sample data for counties
-const countyData = [
-  {
-    county: 'Nairobi',
-    riskScore: 78,
-    tenderCount: 245,
-    totalValue: 2450000000,
-    riskLevel: 'high',
-    ghostSuppliers: 34,
-    priceDeviations: 12,
-    bidRigging: 8,
-  },
-  {
-    county: 'Mombasa',
-    riskScore: 62,
-    tenderCount: 156,
-    totalValue: 1560000000,
-    riskLevel: 'medium',
-    ghostSuppliers: 21,
-    priceDeviations: 7,
-    bidRigging: 4,
-  },
-  {
-    county: 'Kisumu',
-    riskScore: 55,
-    tenderCount: 123,
-    totalValue: 1230000000,
-    riskLevel: 'medium',
-    ghostSuppliers: 16,
-    priceDeviations: 5,
-    bidRigging: 3,
-  },
-  {
-    county: 'Nakuru',
-    riskScore: 71,
-    tenderCount: 198,
-    totalValue: 1980000000,
-    riskLevel: 'high',
-    ghostSuppliers: 28,
-    priceDeviations: 9,
-    bidRigging: 6,
-  },
-  {
-    county: 'Kericho',
-    riskScore: 48,
-    tenderCount: 87,
-    totalValue: 870000000,
-    riskLevel: 'medium',
-    ghostSuppliers: 12,
-    priceDeviations: 3,
-    bidRigging: 2,
-  },
-  {
-    county: 'Eldoret',
-    riskScore: 65,
-    tenderCount: 142,
-    totalValue: 1420000000,
-    riskLevel: 'medium',
-    ghostSuppliers: 24,
-    priceDeviations: 6,
-    bidRigging: 4,
-  },
-  {
-    county: 'Thika',
-    riskScore: 58,
-    tenderCount: 104,
-    totalValue: 1040000000,
-    riskLevel: 'medium',
-    ghostSuppliers: 18,
-    priceDeviations: 4,
-    bidRigging: 3,
-  },
-  {
-    county: 'Gilgil',
-    riskScore: 42,
-    tenderCount: 76,
-    totalValue: 760000000,
-    riskLevel: 'low',
-    ghostSuppliers: 10,
-    priceDeviations: 2,
-    bidRigging: 1,
-  },
-];
-
-// Trend data over months
-const trendData = [
-  { month: 'Jan', criticalCount: 3, highCount: 8, mediumCount: 12 },
-  { month: 'Feb', criticalCount: 5, highCount: 11, mediumCount: 14 },
-  { month: 'Mar', criticalCount: 4, highCount: 9, mediumCount: 13 },
-  { month: 'Apr', criticalCount: 6, highCount: 13, mediumCount: 16 },
-  { month: 'May', criticalCount: 8, highCount: 15, mediumCount: 18 },
-  { month: 'Jun', criticalCount: 7, highCount: 14, mediumCount: 17 },
-];
-
-// Risk distribution by type
-const riskTypeData = [
-  { name: 'Ghost Suppliers', value: 245, color: COLORS.critical },
-  { name: 'Price Deviation', value: 156, color: COLORS.high },
-  { name: 'Bid Rigging', value: 87, color: COLORS.medium },
-  { name: 'Specification Issue', value: 123, color: COLORS.low },
-];
-
 export default function CountyRiskPage() {
   const [sortBy, setSortBy] = useState<'risk' | 'tenders' | 'value'>('risk');
+
+  const { data: countyData = [], isLoading: loadingCounty } = useCountyRisk();
+  const { data: trendData = [], isLoading: loadingTrend } = useRiskTrend({
+    months: 6,
+  });
+  const { data: riskTypeData = [], isLoading: loadingTypes } =
+    useRiskTypeDistribution();
+
+  const loading = loadingCounty || loadingTrend || loadingTypes;
 
   const sortedCounties = [...countyData].sort((a, b) => {
     if (sortBy === 'risk') return b.riskScore - a.riskScore;
@@ -140,10 +45,18 @@ export default function CountyRiskPage() {
   });
 
   const highRiskCounties = countyData.filter(
-    c => c.riskLevel === 'high',
+    c => c.riskLevel === 'high' || c.riskLevel === 'critical',
   ).length;
   const totalTenders = countyData.reduce((sum, c) => sum + c.tenderCount, 0);
   const totalValue = countyData.reduce((sum, c) => sum + c.totalValue, 0);
+
+  if (loading) {
+    return (
+      <div className='flex items-center justify-center h-64'>
+        <Loader2 className='w-8 h-8 animate-spin text-[#00ff88]' />
+      </div>
+    );
+  }
 
   return (
     <div className='space-y-6'>
@@ -156,6 +69,7 @@ export default function CountyRiskPage() {
           Procurement risk analysis by county government
         </p>
       </div>
+
       {/* KPI Cards */}
       <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
         <Card className='bg-[#121418] border-[#1f2937] p-6'>
@@ -177,14 +91,14 @@ export default function CountyRiskPage() {
         <Card className='bg-[#121418] border-[#1f2937] p-6'>
           <p className='text-sm text-[#94a3b8] mb-1'>Total Procurement Value</p>
           <p className='text-3xl font-bold text-[#f59e0b]'>
-            KES {(totalValue / 1000000000).toFixed(1)}B
+            KES {(totalValue / 1_000_000_000).toFixed(1)}B
           </p>
           <p className='text-xs text-[#64748b] mt-2'>Under analysis</p>
         </Card>
       </div>
-      {/* Charts Section */}
+
+      {/* Charts */}
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        {/* Trend Chart */}
         <Card className='bg-[#121418] border-[#1f2937] p-6'>
           <h2 className='text-lg font-semibold text-white mb-4'>
             Risk Trend (6 Months)
@@ -192,7 +106,7 @@ export default function CountyRiskPage() {
           <ResponsiveContainer width='100%' height={300}>
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray='3 3' stroke='#1f2937' />
-              <XAxis stroke='#94a3b8' />
+              <XAxis dataKey='month' stroke='#94a3b8' />
               <YAxis stroke='#94a3b8' />
               <Tooltip
                 contentStyle={{
@@ -205,25 +119,25 @@ export default function CountyRiskPage() {
               <Line
                 type='monotone'
                 dataKey='criticalCount'
-                stroke={COLORS.critical}
+                stroke='#00ff88'
                 name='Critical'
               />
               <Line
                 type='monotone'
                 dataKey='highCount'
-                stroke={COLORS.high}
+                stroke='#ef4444'
                 name='High'
               />
               <Line
                 type='monotone'
                 dataKey='mediumCount'
-                stroke={COLORS.medium}
+                stroke='#f59e0b'
                 name='Medium'
               />
             </LineChart>
           </ResponsiveContainer>
         </Card>
-        {/* Risk Type Distribution */}
+
         <Card className='bg-[#121418] border-[#1f2937] p-6'>
           <h2 className='text-lg font-semibold text-white mb-4'>
             Risk Type Distribution
@@ -237,7 +151,6 @@ export default function CountyRiskPage() {
                 labelLine={false}
                 label={({ name, value }) => `${name}: ${value}`}
                 outerRadius={100}
-                fill='#8884d8'
                 dataKey='value'
               >
                 {riskTypeData.map((entry, index) => (
@@ -255,76 +168,55 @@ export default function CountyRiskPage() {
           </ResponsiveContainer>
         </Card>
       </div>
-      {/* County Comparison */}
+
+      {/* County Table */}
       <Card className='bg-[#121418] border-[#1f2937] p-6'>
         <div className='flex items-center justify-between mb-4'>
           <h2 className='text-lg font-semibold text-white'>
             County Comparison
           </h2>
           <div className='flex gap-2'>
-            <Button
-              size='sm'
-              variant={sortBy === 'risk' ? 'default' : 'outline'}
-              onClick={() => setSortBy('risk')}
-              className={
-                sortBy === 'risk'
-                  ? 'bg-[#00ff88] text-black'
-                  : 'border-[#1f2937]'
-              }
-            >
-              Risk Score
-            </Button>
-            <Button
-              size='sm'
-              variant={sortBy === 'tenders' ? 'default' : 'outline'}
-              onClick={() => setSortBy('tenders')}
-              className={
-                sortBy === 'tenders'
-                  ? 'bg-[#00ff88] text-black'
-                  : 'border-[#1f2937]'
-              }
-            >
-              Tenders
-            </Button>
-            <Button
-              size='sm'
-              variant={sortBy === 'value' ? 'default' : 'outline'}
-              onClick={() => setSortBy('value')}
-              className={
-                sortBy === 'value'
-                  ? 'bg-[#00ff88] text-black'
-                  : 'border-[#1f2937]'
-              }
-            >
-              Value
-            </Button>
+            {(['risk', 'tenders', 'value'] as const).map(opt => (
+              <Button
+                key={opt}
+                size='sm'
+                variant={sortBy === opt ? 'default' : 'outline'}
+                onClick={() => setSortBy(opt)}
+                className={
+                  sortBy === opt
+                    ? 'bg-[#00ff88] text-black'
+                    : 'border-[#1f2937]'
+                }
+              >
+                {opt === 'risk'
+                  ? 'Risk Score'
+                  : opt === 'tenders'
+                    ? 'Tenders'
+                    : 'Value'}
+              </Button>
+            ))}
           </div>
         </div>
         <div className='overflow-x-auto'>
           <table className='w-full text-sm'>
             <thead>
               <tr className='border-b border-[#1f2937]'>
-                <th className='text-left py-3 px-4 text-[#94a3b8] font-semibold'>
-                  County
-                </th>
-                <th className='text-right py-3 px-4 text-[#94a3b8] font-semibold'>
-                  Risk Score
-                </th>
-                <th className='text-right py-3 px-4 text-[#94a3b8] font-semibold'>
-                  Tenders
-                </th>
-                <th className='text-right py-3 px-4 text-[#94a3b8] font-semibold'>
-                  Total Value
-                </th>
-                <th className='text-right py-3 px-4 text-[#94a3b8] font-semibold'>
-                  Ghost
-                </th>
-                <th className='text-right py-3 px-4 text-[#94a3b8] font-semibold'>
-                  Price Dev
-                </th>
-                <th className='text-right py-3 px-4 text-[#94a3b8] font-semibold'>
-                  Bid Rig
-                </th>
+                {[
+                  'County',
+                  'Risk Score',
+                  'Tenders',
+                  'Total Value',
+                  'Ghost',
+                  'Price Dev',
+                  'Bid Rig',
+                ].map(h => (
+                  <th
+                    key={h}
+                    className={`py-3 px-4 text-[#94a3b8] font-semibold ${h === 'County' ? 'text-left' : 'text-right'}`}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -347,7 +239,7 @@ export default function CountyRiskPage() {
                     {county.tenderCount}
                   </td>
                   <td className='py-3 px-4 text-right font-mono text-[#f59e0b]'>
-                    KES {(county.totalValue / 1000000000).toFixed(1)}B
+                    KES {(county.totalValue / 1_000_000_000).toFixed(1)}B
                   </td>
                   <td className='py-3 px-4 text-right text-[#ef4444] font-semibold'>
                     {county.ghostSuppliers}
@@ -364,7 +256,7 @@ export default function CountyRiskPage() {
           </table>
         </div>
       </Card>
-      {/* Risk Analysis Chart */}
+      {/* Bar Chart */}
       <Card className='bg-[#121418] border-[#1f2937] p-6'>
         <h2 className='text-lg font-semibold text-white mb-4'>
           Risk Score by County
@@ -394,7 +286,7 @@ export default function CountyRiskPage() {
           </BarChart>
         </ResponsiveContainer>
       </Card>
-      {/* Export Button */}
+      {/* Export */}
       <div className='flex justify-end'>
         <Button className='bg-[#00ff88] text-black hover:bg-[#00ff88]/90'>
           <Download className='w-4 h-4 mr-2' />

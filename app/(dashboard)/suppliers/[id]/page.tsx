@@ -130,13 +130,15 @@ export default function SupplierDetailPage() {
               <tbody>
                 {supplier.directors.map((director, idx) => (
                   <tr key={idx} className='border-b border-[#1f2937]'>
-                    <td className='py-3 text-white'>{director.name}</td>
+                    <td className='py-3 text-white'>{director.full_name}</td>
                     <td className='py-3 font-mono text-[#00ff88]'>
-                      {director.id_number.slice(0, 2)}****
-                      {director.id_number.slice(-2)}
+                      {director &&
+                        director.id_number &&
+                        director.id_number.slice(0, 2)}
+                      ****
                     </td>
                     <td className='py-3 text-[#f59e0b]'>
-                      {director.other_companies_linked}
+                      {director && director.other_companies_linked}
                     </td>
                   </tr>
                 ))}

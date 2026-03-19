@@ -35,8 +35,8 @@ export default function LoginPage() {
           <div className='mt-6 p-4 bg-[#1a1d23] border border-[#1f2937] rounded text-xs text-[#94a3b8] space-y-1 font-mono'>
             <p className='text-[#00ff88]'>Demo Credentials:</p>
             <p>demo@procmon.go.ke / Admin@123!</p>
-            <p>investigator@example.com / password</p>
-            <p>viewer@example.com / password</p>
+            {/* <p>investigator@example.com / password</p>
+            <p>viewer@example.com / password</p> */}
           </div>
         </div>
       </Card>

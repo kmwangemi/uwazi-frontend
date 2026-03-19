@@ -16,7 +16,7 @@ export interface Supplier {
 }
 
 export interface Director {
-  name: string;
+  full_name: string;
   id_number: string;
   other_companies_linked: number;
 }
