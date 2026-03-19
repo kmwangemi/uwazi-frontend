@@ -1,14 +1,21 @@
-'use client'
+'use client';
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import {
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts';
 
 interface RiskDistributionProps {
   data?: {
-    critical: number
-    high: number
-    medium: number
-    low: number
-  }
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
 }
 
 export function RiskDistribution({ data }: RiskDistributionProps) {
@@ -33,20 +40,20 @@ export function RiskDistribution({ data }: RiskDistributionProps) {
       value: data?.low || 15,
       fill: '#64748b',
     },
-  ]
+  ];
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width='100%' height={300}>
       <PieChart>
         <Pie
           data={chartData}
-          cx="50%"
-          cy="50%"
+          cx='50%'
+          cy='50%'
           labelLine={false}
           label={({ name, value }) => `${name}: ${value}`}
           outerRadius={100}
-          fill="#8884d8"
-          dataKey="value"
+          fill='#8884d8'
+          dataKey='value'
         >
           {chartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -63,5 +70,5 @@ export function RiskDistribution({ data }: RiskDistributionProps) {
         <Legend />
       </PieChart>
     </ResponsiveContainer>
-  )
+  );
 }

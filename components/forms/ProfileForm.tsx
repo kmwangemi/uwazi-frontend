@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { profileSchema, type ProfileFormInput } from '@/lib/schemas';
+import { profileSchema, type ProfileInput } from '@/lib/schemas';
 import { useAuthStore } from '@/lib/store';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -29,7 +29,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
     text: string;
   } | null>(null);
 
-  const form = useForm<ProfileFormInput>({
+  const form = useForm<ProfileInput>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       full_name: user?.full_name || '',
@@ -37,10 +37,9 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
     },
   });
 
-  async function onSubmit(values: ProfileFormInput) {
+  async function onSubmit(values: ProfileInput) {
     setIsSubmitting(true);
     setMessage(null);
-
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -56,7 +55,6 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
       setIsSubmitting(false);
     }
   }
-
   return (
     <div className='space-y-4'>
       {message && (
@@ -68,14 +66,13 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
           }`}
         >
           {message.type === 'success' ? (
-            <CheckCircle2 className='w-5 h-5 flex-shrink-0 mt-0.5' />
+            <CheckCircle2 className='w-5 h-5 shrink-0 mt-0.5' />
           ) : (
-            <AlertCircle className='w-5 h-5 flex-shrink-0 mt-0.5' />
+            <AlertCircle className='w-5 h-5 shrink-0 mt-0.5' />
           )}
           <p className='font-semibold text-sm'>{message.text}</p>
         </div>
       )}
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
           <FormField
@@ -95,7 +92,6 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name='organization'
@@ -113,7 +109,6 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
               </FormItem>
             )}
           />
-
           <div className='bg-[#1a1d23] p-3 rounded border border-[#1f2937]'>
             <p className='text-sm text-[#94a3b8]'>Email</p>
             <p className='text-white font-semibold'>{user?.email}</p>
@@ -121,7 +116,6 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
               Email cannot be changed for security
             </p>
           </div>
-
           <Button
             type='submit'
             disabled={isSubmitting}

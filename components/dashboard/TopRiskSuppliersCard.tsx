@@ -64,7 +64,7 @@ export function TopRiskSuppliersCard({
             />
           </div>
           <div className='text-xs text-[#64748b]'>
-            Ghost probability: {(supplier.ghost_probability * 100).toFixed(0)}%
+            {/* Ghost probability: {(supplier.ghost_probability * 100).toFixed(0)}% */}
           </div>
         </Link>
       ))}

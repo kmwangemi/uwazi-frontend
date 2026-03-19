@@ -37,7 +37,6 @@ const processQueue = (error: unknown) => {
   failedQueue = [];
 };
 
-
 apiClient.interceptors.response.use(
   response => response,
   async (error: AxiosError) => {

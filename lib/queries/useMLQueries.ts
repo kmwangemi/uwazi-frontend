@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 export const mlKeys = {
   all: ['ml'] as const,
   status: () => [...mlKeys.all, 'status'] as const,
-  forecast: (entityId: string) =>
-    [...mlKeys.all, 'forecast', entityId] as const,
+  performance: () => [...mlKeys.all, 'performance'] as const,
+  forecast: (id: string) => [...mlKeys.all, 'forecast', id] as const,
 };
 
 export const useMLStatus = () =>
@@ -14,37 +14,31 @@ export const useMLStatus = () =>
     queryFn: mlService.getStatus,
   });
 
+export const useMLPerformance = () =>
+  useQuery({
+    queryKey: mlKeys.performance(),
+    queryFn: mlService.getPerformance,
+    select: data => data.items,
+  });
+
+export const useTrainModel = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (endpoint: string) => mlService.trainModel(endpoint),
+    onSuccess: () => qc.invalidateQueries({ queryKey: mlKeys.status() }),
+  });
+};
+
 export const useSpendingForecast = (entityId: string) =>
   useQuery({
     queryKey: mlKeys.forecast(entityId),
     queryFn: () => mlService.getSpendingForecast(entityId),
-    enabled: !!entityId,
+    enabled: !!entityId && entityId !== 'all',
   });
 
-// ✅ All training mutations invalidate ML status so the UI reflects new state
-export const useTrainXgboost = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: mlService.trainXgboost,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: mlKeys.status() }),
+export const useMLEntities = () =>
+  useQuery({
+    queryKey: [...mlKeys.all, 'entities'] as const,
+    queryFn: mlService.getEntities,
+    select: data => data.items,
   });
-};
-
-export const useTrainPriceAnomaly = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: mlService.trainPriceAnomaly,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: mlKeys.status() }),
-  });
-};
-
-export const useTrainCollusionVectorizer = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: mlService.trainCollusionVectorizer,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: mlKeys.status() }),
-  });
-};

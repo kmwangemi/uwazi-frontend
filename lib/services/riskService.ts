@@ -12,7 +12,7 @@ export const riskService = {
 
   analyzeSpecifications: (text: string): Promise<SpecAnalysisResponse> =>
     api.post<SpecAnalysisResponse>('/analyze/specifications', {
-      specification_text: text,
+      spec_text: text, // ← was specification_text, backend expects spec_text
     }),
 
   getCountyRiskOverview: (): Promise<CountyRiskOverview[]> =>

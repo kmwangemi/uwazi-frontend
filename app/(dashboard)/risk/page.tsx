@@ -29,10 +29,10 @@ import { z } from 'zod';
 // ── Schemas ───────────────────────────────────────────────────────────────────
 
 const priceSchema = z.object({
-  item_description: z.string().min(1, 'Description is required'),
-  estimated_price: z.coerce.number().positive('Must be a positive number'),
-  category: z.string().min(1, 'Category is required'),
-  county: z.string().min(1, 'County is required'),
+  item_name: z.string().min(1, 'Description is required'),
+  tender_price: z.coerce.number().positive('Must be a positive number'),
+  category: z.string().optional(),
+  county: z.string().optional(),
 });
 
 const specSchema = z.object({
@@ -41,17 +41,6 @@ const specSchema = z.object({
 
 type PriceForm = z.infer<typeof priceSchema>;
 type SpecForm = z.infer<typeof specSchema>;
-
-// ── Risk level color helper ───────────────────────────────────────────────────
-
-const riskColor = (level: string) =>
-  level === 'critical'
-    ? 'text-[#00ff88]'
-    : level === 'high'
-      ? 'text-[#ef4444]'
-      : level === 'medium'
-        ? 'text-[#f59e0b]'
-        : 'text-[#64748b]';
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -65,6 +54,7 @@ export default function RiskPage() {
     isPending: priceLoading,
     data: priceResult,
   } = useCheckPrice();
+
   const {
     mutate: analyzeSpec,
     isPending: specLoading,
@@ -74,8 +64,8 @@ export default function RiskPage() {
   const priceForm = useForm<PriceForm>({
     resolver: zodResolver(priceSchema),
     defaultValues: {
-      item_description: '',
-      estimated_price: 0,
+      item_name: '',
+      tender_price: 0,
       category: '',
       county: '',
     },
@@ -105,6 +95,7 @@ export default function RiskPage() {
           Advanced procurement risk assessment tools
         </p>
       </div>
+
       {/* Tabs */}
       <div className='flex gap-2 border-b border-[#1f2937] pb-4'>
         {tabs.map(tab => (
@@ -121,9 +112,11 @@ export default function RiskPage() {
           </button>
         ))}
       </div>
-      {/* Price Benchmark Tab */}
+
+      {/* ── Price Benchmark Tab ───────────────────────────────────────────── */}
       {activeTab === 'price' && (
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+          {/* Form */}
           <Card className='bg-[#121418] border-[#1f2937] p-6'>
             <h2 className='text-lg font-semibold text-white mb-4'>
               Price Benchmark Checker
@@ -135,7 +128,7 @@ export default function RiskPage() {
               >
                 <FormField
                   control={priceForm.control}
-                  name='item_description'
+                  name='item_name'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-[#94a3b8]'>
@@ -154,7 +147,7 @@ export default function RiskPage() {
                 />
                 <FormField
                   control={priceForm.control}
-                  name='estimated_price'
+                  name='tender_price'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-[#94a3b8]'>
@@ -227,6 +220,7 @@ export default function RiskPage() {
               </form>
             </Form>
           </Card>
+
           {/* Price Results */}
           {priceResult && (
             <Card className='bg-[#121418] border-[#1f2937] p-6'>
@@ -234,43 +228,79 @@ export default function RiskPage() {
                 Analysis Results
               </h3>
               <div className='space-y-4'>
+                {/* Deviation */}
                 <div>
                   <p className='text-sm text-[#94a3b8] mb-1'>Deviation</p>
                   <p
-                    className={`text-2xl font-mono font-bold ${priceResult.deviation_percent > 0 ? 'text-[#ef4444]' : 'text-[#00ff88]'}`}
+                    className={`text-2xl font-mono font-bold ${
+                      priceResult.deviation_pct > 0
+                        ? 'text-[#ef4444]'
+                        : 'text-[#00ff88]'
+                    }`}
                   >
-                    {formatDeviation(priceResult.deviation_percent)}
+                    {formatDeviation(priceResult.deviation_pct)}
                   </p>
                 </div>
-                <div className='grid grid-cols-3 gap-3'>
-                  {[
-                    { label: 'Min', value: priceResult.benchmark_min },
-                    { label: 'Avg', value: priceResult.benchmark_avg },
-                    { label: 'Max', value: priceResult.benchmark_max },
-                  ].map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className='bg-[#1a1d23] p-3 rounded border border-[#1f2937]'
-                    >
-                      <p className='text-xs text-[#94a3b8]'>{label}</p>
-                      <p className='font-mono text-white text-sm'>
-                        KES {(value / 1_000_000).toFixed(1)}M
-                      </p>
-                    </div>
-                  ))}
-                </div>
+
+                {/* Benchmark min/avg/max */}
+                {priceResult.benchmark && (
+                  <div className='grid grid-cols-3 gap-3'>
+                    {[
+                      { label: 'Min', value: priceResult.benchmark.min_price },
+                      { label: 'Avg', value: priceResult.benchmark.avg_price },
+                      { label: 'Max', value: priceResult.benchmark.max_price },
+                    ].map(({ label, value }) => (
+                      <div
+                        key={label}
+                        className='bg-[#1a1d23] p-3 rounded border border-[#1f2937]'
+                      >
+                        <p className='text-xs text-[#94a3b8]'>{label}</p>
+                        <p className='font-mono text-white text-sm'>
+                          KES {((value ?? 0) / 1_000_000).toFixed(1)}M
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Risk level */}
                 <div className='bg-[#1a1d23] p-3 rounded border border-[#1f2937]'>
                   <p className='text-sm text-[#94a3b8] mb-1'>Risk Level</p>
                   <RiskBadge level={priceResult.risk_level} showScore={false} />
                 </div>
+
+                {/* Verdict */}
+                {priceResult.verdict && (
+                  <div className='bg-[#1a1d23] p-3 rounded border border-[#1f2937]'>
+                    <p className='text-sm text-[#94a3b8] mb-1'>Verdict</p>
+                    <p className='text-white text-sm'>{priceResult.verdict}</p>
+                  </div>
+                )}
+
+                {/* Flags */}
+                {priceResult.flags?.length > 0 && (
+                  <div className='space-y-2'>
+                    <p className='text-sm text-[#94a3b8]'>Flags</p>
+                    {priceResult.flags.map((flag, idx) => (
+                      <div
+                        key={idx}
+                        className='bg-[#1a1d23] p-2 rounded border border-[#1f2937] text-xs text-[#f59e0b]'
+                      >
+                        {flag}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </Card>
           )}
         </div>
       )}
-      {/* Specification Analysis Tab */}
+
+      {/* ── Specification Analysis Tab ────────────────────────────────────── */}
       {activeTab === 'spec' && (
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+          {/* Form */}
           <Card className='bg-[#121418] border-[#1f2937] p-6'>
             <h2 className='text-lg font-semibold text-white mb-4'>
               Specification Analyzer
@@ -317,6 +347,7 @@ export default function RiskPage() {
               </form>
             </Form>
           </Card>
+
           {/* Spec Results */}
           {specResult && (
             <Card className='bg-[#121418] border-[#1f2937] p-6'>
@@ -324,6 +355,7 @@ export default function RiskPage() {
                 Analysis Results
               </h3>
               <div className='space-y-4'>
+                {/* Restrictiveness gauge */}
                 <div>
                   <p className='text-sm text-[#94a3b8] mb-2'>
                     Restrictiveness Score
@@ -333,13 +365,23 @@ export default function RiskPage() {
                     size='sm'
                   />
                 </div>
-                {specResult.brand_names_detected.length > 0 && (
+
+                {/* Verdict */}
+                {specResult.verdict && (
+                  <div className='bg-[#1a1d23] p-3 rounded border border-[#1f2937]'>
+                    <p className='text-sm text-[#94a3b8] mb-1'>Verdict</p>
+                    <p className='text-white text-sm'>{specResult.verdict}</p>
+                  </div>
+                )}
+
+                {/* Brand names — backend returns brand_names_found */}
+                {specResult.brand_names_found?.length > 0 && (
                   <div>
                     <p className='text-sm text-[#f59e0b] mb-2'>
                       Brand Names Detected
                     </p>
                     <div className='flex flex-wrap gap-2'>
-                      {specResult.brand_names_detected.map((brand, idx) => (
+                      {specResult.brand_names_found.map((brand, idx) => (
                         <span
                           key={idx}
                           className='px-2 py-1 bg-[#f59e0b]/10 border border-[#f59e0b] text-[#f59e0b] text-xs rounded'
@@ -350,26 +392,22 @@ export default function RiskPage() {
                     </div>
                   </div>
                 )}
-                {specResult.single_source_indicators.length > 0 && (
-                  <div>
-                    <p className='text-sm text-[#ef4444] mb-2'>
-                      Single Source Indicators
+
+                {/* Single source — backend returns boolean */}
+                {specResult.single_source_detected && (
+                  <div className='bg-[#ef4444]/10 border border-[#ef4444] rounded p-3'>
+                    <p className='text-sm text-[#ef4444] font-semibold'>
+                      Single Source Detected
                     </p>
-                    <div className='flex flex-wrap gap-2'>
-                      {specResult.single_source_indicators.map(
-                        (indicator, idx) => (
-                          <span
-                            key={idx}
-                            className='px-2 py-1 bg-[#ef4444]/10 border border-[#ef4444] text-[#ef4444] text-xs rounded'
-                          >
-                            {indicator}
-                          </span>
-                        ),
-                      )}
-                    </div>
+                    <p className='text-xs text-[#ef4444] mt-1'>
+                      Specification shows signs of being written for a single
+                      vendor.
+                    </p>
                   </div>
                 )}
-                {specResult.issues.length > 0 && (
+
+                {/* Issues */}
+                {specResult.issues?.length > 0 && (
                   <div className='space-y-2'>
                     <p className='text-sm text-[#94a3b8]'>Issues Found</p>
                     {specResult.issues.map((issue, idx) => (
@@ -379,19 +417,31 @@ export default function RiskPage() {
                       >
                         <div className='flex justify-between items-start mb-1'>
                           <p className='text-sm font-semibold text-white'>
-                            {issue.issue}
+                            {issue.description}
                           </p>
                           <RiskBadge
-                            level={issue.severity}
+                            level={issue.severity as any}
                             size='sm'
                             showScore={false}
                           />
                         </div>
-                        <p className='text-xs text-[#94a3b8]'>
-                          {issue.description}
-                        </p>
+                        {issue.excerpt && (
+                          <p className='text-xs text-[#64748b] font-mono mt-1'>
+                            {issue.excerpt}
+                          </p>
+                        )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* AI analysis if present */}
+                {specResult.ai_analysis && (
+                  <div className='bg-[#1a1d23] p-3 rounded border border-[#1f2937]'>
+                    <p className='text-sm text-[#94a3b8] mb-1'>AI Analysis</p>
+                    <p className='text-white text-xs leading-relaxed font-mono'>
+                      {specResult.ai_analysis}
+                    </p>
                   </div>
                 )}
               </div>
@@ -399,7 +449,7 @@ export default function RiskPage() {
           )}
         </div>
       )}
-      {/* County Overview Tab */}
+      {/* ── County Overview Tab ───────────────────────────────────────────── */}
       {activeTab === 'county' && (
         <Card className='bg-[#121418] border-[#1f2937] p-6'>
           <div className='space-y-4'>

@@ -1,18 +1,68 @@
 import { api } from '@/lib/api';
-import { MLStatus, SpendingForecast, TrainingProgress } from '@/lib/types';
+
+export interface MLModel {
+  id: string;
+  name: string;
+  library: string;
+  layer: string;
+  trained: boolean;
+  trainable: boolean;
+  train_endpoint: string | null;
+}
+
+export interface MLStatusResponse {
+  models: MLModel[];
+  total: number;
+  trained_count: number;
+  untrained_count: number;
+}
+
+export interface MLPerformanceItem {
+  id: string;
+  name: string;
+  accuracy: number | null;
+}
+
+export interface SpendingForecastResponse {
+  entity_id: string;
+  entity_name: string;
+  forecast: {
+    ds: string;
+    yhat: number;
+    yhat_lower: number;
+    yhat_upper: number;
+  }[];
+  anomalies: {
+    date: string;
+    actual_spend: number;
+    expected_spend: number;
+    deviation_pct: number;
+    severity: string;
+  }[];
+  anomaly_dates: string[];
+  pattern_summary: string;
+  anomaly_risk_score: number;
+  message?: string;
+}
+
+export interface EntityOption {
+  id: string;
+  name: string;
+}
 
 export const mlService = {
-  getStatus: (): Promise<MLStatus> => api.get<MLStatus>('/ml/status'),
+  getStatus: (): Promise<MLStatusResponse> => api.get('/ml/status'),
 
-  trainXgboost: (): Promise<TrainingProgress> =>
-    api.post<TrainingProgress>('/ml/train/xgboost-synthetic'),
+  getPerformance: (): Promise<{ items: MLPerformanceItem[] }> =>
+    api.get('/ml/performance'),
 
-  trainPriceAnomaly: (): Promise<TrainingProgress> =>
-    api.post<TrainingProgress>('/ml/train/price-anomaly'),
+  trainModel: (
+    endpoint: string,
+  ): Promise<{ status: string; message?: string }> => api.post(endpoint, {}),
 
-  trainCollusionVectorizer: (): Promise<TrainingProgress> =>
-    api.post<TrainingProgress>('/ml/train/collusion-vectorizer'),
+  getSpendingForecast: (entityId: string): Promise<SpendingForecastResponse> =>
+    api.get(`/ml/spending-forecast/${entityId}`),
 
-  getSpendingForecast: (entityId: string): Promise<SpendingForecast> =>
-    api.get<SpendingForecast>(`/ml/spending-forecast/${entityId}`),
+  getEntities: (): Promise<{ items: EntityOption[] }> =>
+    api.get('/ml/entities'),
 };

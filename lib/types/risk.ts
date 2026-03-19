@@ -1,47 +1,58 @@
 export interface PriceCheckRequest {
-  item_description: string;
-  estimated_price: number;
-  category: string;
-  county: string;
+  item_name: string;
+  tender_price: number;
+  category?: string;
+  county?: string;
 }
 
 export interface PriceCheckResponse {
-  deviation_percent: number;
-  benchmark_avg: number;
-  benchmark_min: number;
-  benchmark_max: number;
+  score: number;
   risk_level: 'low' | 'medium' | 'high' | 'critical';
-  market_distribution: {
-    price: number;
-    count: number;
-  }[];
-}
-
-export interface SpecAnalysisRequest {
-  specification_text: string;
+  deviation_pct: number; // ← not deviation_percent
+  benchmark: {
+    item_name: string;
+    category: string;
+    unit: string;
+    avg_price: number; // ← not benchmark_avg
+    min_price: number; // ← not benchmark_min
+    max_price: number; // ← not benchmark_max
+    source: string;
+  } | null;
+  flags: string[];
+  verdict: string;
+  item_name: string;
+  tender_price: number;
 }
 
 export interface SpecAnalysisResponse {
   restrictiveness_score: number;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
   issues: SpecIssue[];
-  brand_names_detected: string[];
-  single_source_indicators: string[];
+  brand_names_found: string[]; // ← not brand_names_detected
+  single_source_detected: boolean; // ← boolean not string[]
+  verdict: string;
+  ai_analysis: string | null;
+  spec_length: number;
 }
 
 export interface SpecIssue {
-  issue: string;
-  severity: 'low' | 'medium' | 'high';
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
+  excerpt: string;
 }
 
 export interface CountyRiskOverview {
   county: string;
   tender_count: number;
   avg_risk_score: number;
-  total_value: number;
-  highest_risk_tender?: {
+  total_value_kes: number; // ← not total_value
+  critical_count: number;
+  high_count: number;
+  highest_risk_tender: {
     id: string;
     title: string;
-    risk_score: number;
-  };
+    total_score: number;
+    risk_level: string;
+  } | null;
 }

@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { passwordSchema, type PasswordFormInput } from '@/lib/schemas';
+import { passwordSchema, type PasswordInput } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
@@ -27,7 +27,7 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
     text: string;
   } | null>(null);
 
-  const form = useForm<PasswordFormInput>({
+  const form = useForm<PasswordInput>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
       current_password: '',
@@ -36,10 +36,9 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
     },
   });
 
-  async function onSubmit(values: PasswordFormInput) {
+  async function onSubmit(values: PasswordInput) {
     setIsSubmitting(true);
     setMessage(null);
-
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -68,14 +67,13 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
           }`}
         >
           {message.type === 'success' ? (
-            <CheckCircle2 className='w-5 h-5 flex-shrink-0 mt-0.5' />
+            <CheckCircle2 className='w-5 h-5 shrink-0 mt-0.5' />
           ) : (
-            <AlertCircle className='w-5 h-5 flex-shrink-0 mt-0.5' />
+            <AlertCircle className='w-5 h-5 shrink-0 mt-0.5' />
           )}
           <p className='font-semibold text-sm'>{message.text}</p>
         </div>
       )}
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
           <FormField
@@ -96,7 +94,6 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name='new_password'
@@ -115,7 +112,6 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name='confirm_password'
@@ -134,7 +130,6 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
               </FormItem>
             )}
           />
-
           <Button
             type='submit'
             disabled={isSubmitting}

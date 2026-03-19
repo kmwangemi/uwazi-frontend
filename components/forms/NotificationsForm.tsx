@@ -9,10 +9,7 @@ import {
   FormLabel,
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
-import {
-  notificationsSchema,
-  type NotificationsFormInput,
-} from '@/lib/schemas';
+import { notificationsSchema, type NotificationsInput } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
@@ -29,19 +26,18 @@ export function NotificationsForm({ onSuccess }: NotificationsFormProps) {
     text: string;
   } | null>(null);
 
-  const form = useForm<NotificationsFormInput>({
+  const form = useForm<NotificationsInput>({
     resolver: zodResolver(notificationsSchema),
     defaultValues: {
-      risk_alerts: true,
-      weekly_digest: true,
-      monthly_report: false,
+      notify_risk_alerts: true,
+      notify_weekly_digest: true,
+      notify_monthly_report: false,
     },
   });
 
-  async function onSubmit(values: NotificationsFormInput) {
+  async function onSubmit(values: NotificationsInput) {
     setIsSubmitting(true);
     setMessage(null);
-
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -74,19 +70,18 @@ export function NotificationsForm({ onSuccess }: NotificationsFormProps) {
           }`}
         >
           {message.type === 'success' ? (
-            <CheckCircle2 className='w-5 h-5 flex-shrink-0 mt-0.5' />
+            <CheckCircle2 className='w-5 h-5 shrink-0 mt-0.5' />
           ) : (
-            <AlertCircle className='w-5 h-5 flex-shrink-0 mt-0.5' />
+            <AlertCircle className='w-5 h-5 shrink-0 mt-0.5' />
           )}
           <p className='font-semibold text-sm'>{message.text}</p>
         </div>
       )}
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
           <FormField
             control={form.control}
-            name='risk_alerts'
+            name='notify_risk_alerts'
             render={({ field }) => (
               <FormItem className='flex items-center justify-between p-4 bg-[#1a1d23] rounded border border-[#1f2937]'>
                 <div>
@@ -106,10 +101,9 @@ export function NotificationsForm({ onSuccess }: NotificationsFormProps) {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
-            name='weekly_digest'
+            name='notify_weekly_digest'
             render={({ field }) => (
               <FormItem className='flex items-center justify-between p-4 bg-[#1a1d23] rounded border border-[#1f2937]'>
                 <div>
@@ -129,10 +123,9 @@ export function NotificationsForm({ onSuccess }: NotificationsFormProps) {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
-            name='monthly_report'
+            name='notify_monthly_report'
             render={({ field }) => (
               <FormItem className='flex items-center justify-between p-4 bg-[#1a1d23] rounded border border-[#1f2937]'>
                 <div>
@@ -152,7 +145,6 @@ export function NotificationsForm({ onSuccess }: NotificationsFormProps) {
               </FormItem>
             )}
           />
-
           <Button
             type='submit'
             disabled={isSubmitting}
