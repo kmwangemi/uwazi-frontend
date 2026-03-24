@@ -13,7 +13,7 @@ export function useLogin() {
       setUser(data.user);
       setToken(data.tokens.access_token);
       setRefreshToken(data.tokens.refresh_token); // store for silent refresh + logout
-      router.push('/');
+      router.push('/dashboard');
     },
   });
 }
