@@ -31,6 +31,20 @@ export function formatDate(isoString: string): string {
   }
 }
 
+/**
+ * Format a date with time
+ */
+export const formatDateTime = (date: Date | string): string => {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("en-KE", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+};
+
 // Get days until a date
 export function daysUntil(isoString: string): number {
   try {
@@ -113,3 +127,15 @@ export function formatDeviation(deviation: number): string {
   if (deviation > 0) return `+${deviation.toFixed(1)}%`;
   return `${deviation.toFixed(1)}%`;
 }
+
+export const capitalizeFirstLetter = (str: string) => {
+  if (typeof str !== 'string' || str.length === 0) {
+    return '';
+  }
+  return str.charAt(0).toUpperCase() + str.substring(1);
+};
+
+// export const formatToNewDate = (date: Date | string): string => {
+//   if (!date) return '';
+//   return formatDate(date, 'dd/MM/yyyy');
+// };
