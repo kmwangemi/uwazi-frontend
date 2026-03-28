@@ -10,3 +10,5 @@ export interface ApiError {
   detail: string;
   status_code?: number;
 }
+
+export type UserRole = 'admin' | 'investigator' | 'auditor' | 'analyst';

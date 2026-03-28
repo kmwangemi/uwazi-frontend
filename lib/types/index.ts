@@ -7,3 +7,4 @@ export * from './supplier';
 export * from './tender';
 export * from './user';
 export * from './whistleblower';
+export * from './log';

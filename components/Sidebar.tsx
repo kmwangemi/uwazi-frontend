@@ -3,19 +3,22 @@
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/lib/queries/useAuthQueries';
 import { useAuthStore, useUIStore } from '@/lib/store';
+import { UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
   BarChart3,
+  ClipboardList,
   Cpu,
-  Eye,
   FileText,
+  FolderOpen,
   LayoutDashboard,
   LogOut,
   Map,
   Menu,
   MessageSquare,
   Settings,
+  User,
   Users,
   X,
 } from 'lucide-react';
@@ -24,31 +27,92 @@ import { usePathname } from 'next/navigation';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const user = useAuthStore(state => state.user);
+  const { user } = useAuthStore();
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
-  // ✅ roles is now an array
+  // ✅ roles is an array
   const roles = user?.roles ?? [];
-  const isAdmin = roles.includes('admin');
-  const isInvestigator = roles.includes('investigator');
   const navItems = [
-    { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { label: 'Tenders', href: '/tenders', icon: FileText },
-    { label: 'Suppliers', href: '/suppliers', icon: Users },
-    { label: 'Risk Analysis', href: '/risk', icon: AlertTriangle },
-    { label: 'County Risk', href: '/county-risk', icon: Map },
-    { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-    ...(isInvestigator || isAdmin
-      ? [{ label: 'Investigations', href: '/investigations', icon: Eye }]
-      : []),
+    {
+      label: 'Dashboard',
+      href: '/dashboard',
+      icon: LayoutDashboard,
+      roles: ['admin', 'analyst', 'investigator'] as UserRole[],
+    },
+    {
+      label: 'Tenders',
+      href: '/tenders',
+      icon: FileText,
+      roles: ['admin', 'analyst', 'investigator'] as UserRole[],
+    },
+    {
+      label: 'Suppliers',
+      href: '/suppliers',
+      icon: Users,
+      roles: ['admin', 'analyst', 'investigator'] as UserRole[],
+    },
+    {
+      label: 'Risk Analysis',
+      href: '/risk',
+      icon: AlertTriangle,
+      roles: ['admin', 'analyst', 'investigator'] as UserRole[],
+    },
+    {
+      label: 'County Risk',
+      href: '/county-risk',
+      icon: Map,
+      roles: ['admin', 'analyst', 'investigator'] as UserRole[],
+    },
+    {
+      label: 'Analytics',
+      href: '/analytics',
+      icon: BarChart3,
+      roles: ['admin', 'analyst'] as UserRole[],
+    },
+    {
+      label: 'Investigations',
+      href: '/investigations',
+      icon: FolderOpen,
+      roles: ['admin', 'analyst', 'investigator'] as UserRole[],
+    },
     {
       label: 'Whistleblower',
       href: '/public/whistleblower',
       icon: MessageSquare,
+      roles: ['admin', 'analyst', 'investigator'] as UserRole[],
     },
-    ...(isAdmin ? [{ label: 'ML Models', href: '/ml-status', icon: Cpu }] : []),
-    { label: 'Settings', href: '/settings', icon: Settings },
+    {
+      label: 'Profile',
+      href: '/profile',
+      icon: User,
+      roles: ['admin', 'analyst', 'investigator'] as UserRole[],
+    },
+    {
+      label: 'Users',
+      href: '/users',
+      icon: Users,
+      roles: ['admin'] as UserRole[],
+    },
+    {
+      label: 'Settings',
+      href: '/settings',
+      icon: Settings,
+      roles: ['admin'] as UserRole[],
+    },
+    {
+      label: 'ML Models',
+      href: '/ml-status',
+      icon: Cpu,
+      roles: ['admin', 'analyst'] as UserRole[],
+    },
+    {
+      label: 'Logs',
+      href: '/logs',
+      icon: ClipboardList,
+      roles: ['admin'] as UserRole[],
+    },
   ];
+
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
     return pathname?.startsWith(href) ?? false;

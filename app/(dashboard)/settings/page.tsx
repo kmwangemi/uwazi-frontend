@@ -5,20 +5,17 @@ import { PasswordForm } from '@/components/forms/PasswordForm';
 import { ProfileForm } from '@/components/forms/ProfileForm';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useLogout } from '@/lib/queries/useAuthQueries';
 import { useAuthStore } from '@/lib/store';
 import { Bell, Lock, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 
 export default function SettingsPage() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const [activeTab, setActiveTab] = useState<
     'account' | 'notifications' | 'security'
   >('account');
-
-  const handleLogout = () => {
-    logout();
-  };
-
   return (
     <div className='space-y-6'>
       {/* Header */}
@@ -113,11 +110,12 @@ export default function SettingsPage() {
                 Once you logout, you will need to sign in again.
               </p>
               <Button
-                onClick={handleLogout}
+                onClick={() => logout()}
+                disabled={isLoggingOut}
                 className='w-full bg-[#ef4444] text-white hover:bg-[#ef4444]/90'
               >
                 <LogOut className='w-4 h-4 mr-2' />
-                Logout
+                {isLoggingOut ? 'Logging out...' : 'Logout'}
               </Button>
             </div>
           </Card>

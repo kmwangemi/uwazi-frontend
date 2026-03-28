@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useInvestigationsList,
   useWhistleblowerList,
-} from '@/lib/queries/useInvestigations';
+} from '@/lib/queries/useInvestigationQueries';
 import { Download, FileText, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 

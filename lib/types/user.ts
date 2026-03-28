@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'investigator' | 'auditor' | 'analyst';
+import { UserRole } from '@/lib/types';
 
 export type UserStatus = 'active' | 'inactive' | 'suspended';
 
