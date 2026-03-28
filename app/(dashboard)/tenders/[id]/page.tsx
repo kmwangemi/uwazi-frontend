@@ -269,7 +269,7 @@ export default function TenderDetailPage() {
                             {bid.supplier_name}
                           </h4>
                           <p className='text-sm text-[#94a3b8]'>
-                            {formatKES(bid.amount)}
+                            {formatKES(bid.bid_amount)}
                           </p>
                         </div>
                         {bid.is_winner && (
@@ -281,7 +281,7 @@ export default function TenderDetailPage() {
                       {bid.similarity_score && (
                         <p className='text-xs text-[#64748b]'>
                           Collusion similarity:{' '}
-                          {/* {(bid.similarity_score * 100).toFixed(1)}% */}
+                          {(bid.similarity_score * 100).toFixed(1)}%
                         </p>
                       )}
                     </Card>

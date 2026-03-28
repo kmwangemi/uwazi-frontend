@@ -45,11 +45,11 @@ export interface Bid {
   id: string;
   supplier_id: string;
   supplier_name: string;
-  amount: number;
+  bid_amount: number;
   is_winner: boolean;
-  deviation_from_lowest: number;
   similarity_score?: number;
-  bid_date: string;
+  bid_date?: string;
+  proposal_text: string;
 }
 
 export interface TenderDocument {
