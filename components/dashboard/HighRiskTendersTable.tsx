@@ -25,7 +25,6 @@ export function HighRiskTendersTable({
 }: HighRiskTendersTableProps) {
   const { data: tenders, isLoading } = useHighRiskTenders();
   const loading = parentLoading || isLoading;
-
   if (loading) {
     return (
       <div className='space-y-2'>
@@ -35,7 +34,6 @@ export function HighRiskTendersTable({
       </div>
     );
   }
-
   return (
     <div className='space-y-4'>
       <div className='overflow-x-auto'>

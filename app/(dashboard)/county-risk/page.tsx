@@ -287,12 +287,12 @@ export default function CountyRiskPage() {
         </ResponsiveContainer>
       </Card>
       {/* Export */}
-      <div className='flex justify-end'>
+      {/* <div className='flex justify-end'>
         <Button className='bg-[#00ff88] text-black hover:bg-[#00ff88]/90'>
           <Download className='w-4 h-4 mr-2' />
           Export Report
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 }

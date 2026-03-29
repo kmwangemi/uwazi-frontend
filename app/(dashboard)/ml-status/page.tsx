@@ -251,7 +251,7 @@ export default function MLStatusPage() {
       </Card>
 
       {/* Model Performance */}
-      <Card className='bg-[#121418] border-[#1f2937] p-6'>
+      {/* <Card className='bg-[#121418] border-[#1f2937] p-6'>
         <h2 className='text-lg font-semibold text-white mb-4'>Model Performance</h2>
         {perfLoading ? (
           <div className='space-y-4'>
@@ -290,7 +290,7 @@ export default function MLStatusPage() {
             )}
           </div>
         )}
-      </Card>
+      </Card> */}
     </div>
   );
 }

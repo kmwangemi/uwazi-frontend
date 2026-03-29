@@ -46,7 +46,7 @@ export default function TendersPage() {
       </div>
       {/* Filters */}
       <Card className='bg-[#121418] border-[#1f2937] p-4'>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3'>
           <Input
             placeholder='Search tenders...'
             value={filters.search || ''}
@@ -73,7 +73,7 @@ export default function TendersPage() {
           >
             Clear Filters
           </Button>
-          <Button
+          {/* <Button
             size='sm'
             className='bg-[#00ff88] text-black hover:bg-[#00ff88]/90'
           >
@@ -84,7 +84,7 @@ export default function TendersPage() {
             className='bg-[#f59e0b] text-black hover:bg-[#f59e0b]/90'
           >
             <Zap className='w-4 h-4 mr-2' /> Analyze
-          </Button>
+          </Button> */}
         </div>
       </Card>
       {/* Error */}

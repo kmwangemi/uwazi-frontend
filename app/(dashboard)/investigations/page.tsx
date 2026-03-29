@@ -22,13 +22,13 @@ export default function InvestigationsPage() {
   const { data: invData, isLoading: invLoading } = useInvestigationsList({
     search: invSearch,
     page: invPage,
-    limit: 20,
+    limit: 10,
   });
 
   const { data: wbData, isLoading: wbLoading } = useWhistleblowerList({
     search: wbSearch,
     page: wbPage,
-    limit: 20,
+    limit: 10,
   });
 
   const investigations = invData?.items ?? [];
@@ -139,8 +139,7 @@ export default function InvestigationsPage() {
                       <p className='text-white text-sm'>{inv.findings}</p>
                     </div>
                   )}
-
-                  <div className='flex gap-2'>
+                  {/* <div className='flex gap-2'>
                     <Button
                       variant='outline'
                       size='sm'
@@ -157,7 +156,7 @@ export default function InvestigationsPage() {
                       <Download className='w-4 h-4 mr-2' />
                       Export
                     </Button>
-                  </div>
+                  </div> */}
                 </Card>
               ))}
 
