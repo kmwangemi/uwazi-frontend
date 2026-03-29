@@ -20,7 +20,15 @@ interface CountyAnalysisProps {
 }
 
 export function CountyAnalysis({ data }: CountyAnalysisProps) {
-  const chartData = data || [
+  console.log('County Analysis Data:', data);
+  // const chartData = data || [
+  //   { county: 'Nairobi', tenders: 45, risk_score: 68 },
+  //   { county: 'Kisumu', tenders: 28, risk_score: 52 },
+  //   { county: 'Mombasa', tenders: 32, risk_score: 71 },
+  //   { county: 'Nakuru', tenders: 19, risk_score: 45 },
+  //   { county: 'Westlands', tenders: 23, risk_score: 58 },
+  // ];
+  const chartData = [
     { county: 'Nairobi', tenders: 45, risk_score: 68 },
     { county: 'Kisumu', tenders: 28, risk_score: 52 },
     { county: 'Mombasa', tenders: 32, risk_score: 71 },

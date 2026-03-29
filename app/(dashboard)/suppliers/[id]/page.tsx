@@ -138,7 +138,9 @@ export default function SupplierDetailPage() {
                       ****
                     </td>
                     <td className='py-3 text-[#f59e0b]'>
-                      {director && director.other_companies_linked}
+                      {director && director.other_companies_linked
+                        ? director.other_companies_linked
+                        : 'Not Available'}
                     </td>
                   </tr>
                 ))}

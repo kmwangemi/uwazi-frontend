@@ -19,7 +19,6 @@ interface TrendChartProps {
 
 export function TrendChart({ isLoading, data }: TrendChartProps) {
   if (isLoading) return <Skeleton className='h-72' />;
-
   return (
     <ResponsiveContainer width='100%' height={300}>
       <AreaChart

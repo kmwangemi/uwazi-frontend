@@ -1,9 +1,9 @@
 'use client';
 
-import { AIQueryBox } from '@/components/dashboard/AIQueryBox';
+// import { AIQueryBox } from '@/components/dashboard/AIQueryBox';
 import { HighRiskTendersTable } from '@/components/dashboard/HighRiskTendersTable';
 import { TopRiskSuppliersCard } from '@/components/dashboard/TopRiskSuppliersCard';
-import { TrendChart } from '@/components/dashboard/TrendChart';
+// import { TrendChart } from '@/components/dashboard/TrendChart';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -20,19 +20,15 @@ export default function DashboardPage() {
     isLoading: statsLoading,
     error: statsError,
   } = useDashboardStats();
-
   const { data: heatmapData, isLoading: heatmapLoading } =
     useDashboardHeatmap();
-
   const {
     data: topSuppliers,
     isLoading: suppliersLoading,
     error: suppliersError,
   } = useTopRiskSuppliers();
-
   const isLoading = statsLoading || heatmapLoading || suppliersLoading;
   const error = statsError || suppliersError;
-
   if (error) {
     return (
       <div className='flex items-center justify-center py-12'>
@@ -54,7 +50,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
   return (
     <div className='space-y-6'>
       {/* Header */}
@@ -64,7 +59,6 @@ export default function DashboardPage() {
           Real-time procurement risk monitoring and analysis
         </p>
       </div>
-
       {/* Stats Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
         {isLoading ? (
@@ -84,7 +78,6 @@ export default function DashboardPage() {
                 <span className='text-[#64748b]'>vs last month</span>
               </div>
             </Card>
-
             <Card className='bg-[#121418] border-[#ef4444]/30 p-6'>
               <div className='text-sm text-[#94a3b8] mb-2'>Critical Risk</div>
               <div className='text-3xl font-mono font-bold text-[#ef4444] mb-2'>
@@ -112,7 +105,6 @@ export default function DashboardPage() {
                 <span className='text-[#64748b]'>vs last month</span>
               </div>
             </Card>
-
             <Card className='bg-[#121418] border-[#1f2937] p-6'>
               <div className='text-sm text-[#94a3b8] mb-2'>Investigations</div>
               <div className='text-3xl font-mono font-bold text-[#00ff88] mb-2'>
@@ -129,17 +121,16 @@ export default function DashboardPage() {
           </>
         ) : null}
       </div>
-
       {/* Main Grid */}
       <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
         {/* Left Column */}
         <div className='lg:col-span-2 space-y-6'>
-          <Card className='bg-[#121418] border-[#1f2937] p-6'>
+          {/* <Card className='bg-[#121418] border-[#1f2937] p-6'>
             <h2 className='text-lg font-semibold text-white mb-4'>
               Risk Trend
             </h2>
             <TrendChart isLoading={isLoading} />
-          </Card>
+          </Card> */}
           <Card className='bg-[#121418] border-[#1f2937] p-6'>
             <h2 className='text-lg font-semibold text-white mb-4'>
               High Risk Tenders
@@ -147,7 +138,6 @@ export default function DashboardPage() {
             <HighRiskTendersTable isLoading={isLoading} />
           </Card>
         </div>
-
         {/* Right Column */}
         <div className='space-y-6'>
           <Card className='bg-[#121418] border-[#1f2937] p-6'>
@@ -187,7 +177,6 @@ export default function DashboardPage() {
               </div>
             )}
           </Card>
-
           <Card className='bg-[#121418] border-[#1f2937] p-6'>
             <h2 className='text-lg font-semibold text-white mb-4'>
               Top Risk Suppliers
@@ -197,11 +186,10 @@ export default function DashboardPage() {
               isLoading={suppliersLoading}
             />
           </Card>
-
-          <Card className='bg-[#121418] border-[#1f2937] p-6'>
+          {/* <Card className='bg-[#121418] border-[#1f2937] p-6'>
             <h2 className='text-lg font-semibold text-white mb-4'>Ask AI</h2>
             <AIQueryBox />
-          </Card>
+          </Card> */}
         </div>
       </div>
     </div>
