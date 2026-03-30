@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import { RegisterFormValues } from '@/lib/schemas/auth';
 import { LoginRequest, LoginResponse } from '@/lib/types/user';
+import { useAuthStore } from '@/lib/store';
 
 interface LogoutResponse {
   message: string;
@@ -24,7 +25,10 @@ export const authService = {
     });
   },
   logout: async (): Promise<LogoutResponse> => {
-    return api.post<LogoutResponse>('/auth/logout');
+    const { refreshToken } = useAuthStore.getState();
+    return await api.post<LogoutResponse>('/auth/logout', {
+      refresh_token: refreshToken,
+    });
   },
   register: async (data: RegisterFormValues): Promise<RegisterResponse> => {
     // Strip confirm_password — backend doesn't need it
